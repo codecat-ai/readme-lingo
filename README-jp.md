@@ -1,5 +1,5 @@
 <!-- readme-lingo-switcher:start -->
-[English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md)
+[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
 <!-- readme-lingo-switcher:end -->
 
 # readme-lingo
@@ -84,10 +84,10 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .
 ```
 
-デフォルトの出力名は `README-<target>.md` です。リポジトリ規約として `README-ja.md` を使いたい場合は、日本語ターゲットに対して単一ターゲットコマンドで明示的に出力を指定します。
+デフォルトの出力名は `README-<target>.md` です。リポジトリ規約として `README-jp.md` を使いたい場合は、日本語ターゲットに対して単一ターゲットコマンドで明示的に出力を指定します。
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
+go run ./cmd/readme-lingo translate --source README.md --target ja --output README-jp.md
 ```
 
 API を呼び出さずに予定される出力だけを表示:
@@ -109,7 +109,7 @@ go run ./cmd/readme-lingo translate \
   --source README.md \
   --targets zh,jp \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
+  --switcher "en:README.md,zh:README-zh.md,ja:README-jp.md"
 ```
 
 ## 開発
@@ -152,4 +152,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"jp","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:559d286f5bef64b232d7e3a4b998084c3a60cee0270b3977a0cc4cbb3621ad1f","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"jp","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:8d59d29bb03a33602d4558398241e727328cea79d9ea07f12867e336b5b06ef7","generated":"2026-05-05T00:00:00Z"} -->

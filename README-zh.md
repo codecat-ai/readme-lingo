@@ -1,5 +1,5 @@
 <!-- readme-lingo-switcher:start -->
-[English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md)
+[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
 <!-- readme-lingo-switcher:end -->
 
 # readme-lingo
@@ -84,10 +84,10 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .
 ```
 
-默认输出名为 `README-<target>.md`。如果仓库约定使用 `README-ja.md`，但目标语言是日语，可以在单目标命令中显式指定输出：
+默认输出名为 `README-<target>.md`。如果仓库约定使用 `README-jp.md`，但目标语言是日语，可以在单目标命令中显式指定输出：
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
+go run ./cmd/readme-lingo translate --source README.md --target ja --output README-jp.md
 ```
 
 只显示计划输出，不调用 API：
@@ -109,7 +109,7 @@ go run ./cmd/readme-lingo translate \
   --source README.md \
   --targets zh,jp \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
+  --switcher "en:README.md,zh:README-zh.md,ja:README-jp.md"
 ```
 
 ## 开发
@@ -152,4 +152,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:559d286f5bef64b232d7e3a4b998084c3a60cee0270b3977a0cc4cbb3621ad1f","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:8d59d29bb03a33602d4558398241e727328cea79d9ea07f12867e336b5b06ef7","generated":"2026-05-05T00:00:00Z"} -->
