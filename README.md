@@ -6,7 +6,7 @@
 
 readme-lingo is a Go command-line utility for maintainers who keep multilingual README files synchronized. It translates a source Markdown file with an OpenAI-compatible Chat Completions API, preserves Markdown-oriented structure, writes target files, and embeds a hidden source digest marker so later checks can detect stale translations.
 
-The project is MIT licensed and currently intended for local builds from GitHub. It does not store API keys and it never needs a real key in the repository, tests, examples, logs, or issue reports.
+The project is MIT licensed and installable directly from its GitHub Go module with `go install`. It does not store API keys and it never needs a real key in the repository, tests, examples, logs, or issue reports.
 
 ## Problem and Motivation
 
@@ -19,11 +19,17 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Preserve Markdown-oriented structure by prompting the model to keep code fences, links, tables, front matter, and HTML comments intact.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API.
-- Insert a top language switcher for multilingual README navigation.
+- Insert or automatically manage a top language switcher for multilingual README navigation.
 
 ## Installation
 
-readme-lingo is not published to a package registry yet. Use the local GitHub workflow below until tagged releases are available.
+readme-lingo is a Go module hosted on GitHub, so no separate package registry publication is required. Install the latest version directly with Go:
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+```
+
+For reproducible installs, prefer a tagged version once releases are tagged, for example `@v0.1.0`. The clone workflow below remains useful for development.
 
 ## Configuration
 
@@ -52,6 +58,13 @@ Do not pass real API keys in command history, examples, test data, or bug report
 
 ## Quick Start
 
+Install and run from GitHub:
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
+```
+
 Clone and run locally:
 
 ```sh
@@ -67,8 +80,6 @@ Build a local binary:
 go build -o bin/readme-lingo ./cmd/readme-lingo
 ./bin/readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
 ```
-
-No `go install github.com/codecat-ai/readme-lingo@latest` command is documented yet because this project has not been published as a tagged Go module release.
 
 ## Examples
 
@@ -99,17 +110,17 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 Check whether expected translations exist and match the current source digest:
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --targets zh,jp --output-dir . --check
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
-Insert a top language switcher in generated files:
+Automatically manage the top language switcher in the source and generated README files:
 
 ```sh
 go run ./cmd/readme-lingo translate \
   --source README.md \
-  --targets zh,jp \
+  --targets zh,ja \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
+  --auto-switcher
 ```
 
 ## Development
@@ -141,7 +152,7 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 - More Markdown-aware chunking for large README files
 - Optional glossary support
 - Better stale-check reporting for CI annotations
-- Release tags and published module installation instructions
+- Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - Examples for scheduled README synchronization workflows
 
 ## AI-Assisted Maintenance

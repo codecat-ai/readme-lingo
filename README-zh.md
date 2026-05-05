@@ -6,7 +6,7 @@
 
 readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言 README 文件保持同步。它通过兼容 OpenAI Chat Completions 的 API 翻译源 Markdown 文件，尽量保留 Markdown 结构，写入目标文件，并嵌入隐藏的源文件摘要标记，方便之后检查译文是否已经过期。
 
-本项目使用 MIT 许可证，目前设计为从 GitHub 克隆后本地构建使用。它不会存储 API key，仓库、测试、示例、日志或 issue 报告中也不应包含真实 key。
+本项目使用 MIT 许可证，并可直接通过 GitHub Go module 使用 `go install` 安装。它不会存储 API key，仓库、测试、示例、日志或 issue 报告中也不应包含真实 key。
 
 ## 问题与动机
 
@@ -19,11 +19,17 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 通过提示模型保留代码块、链接、表格、front matter 和 HTML 注释，尽量保持 Markdown 结构。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期。
-- 插入用于多语言 README 导航的顶部语言切换器。
+- 插入或自动管理用于多语言 README 导航的顶部语言切换器。
 
 ## 安装
 
-readme-lingo 尚未发布到包注册表。在可用的标签版本发布前，请使用下面的 GitHub 本地工作流。
+readme-lingo 是托管在 GitHub 上的 Go module，因此不需要单独发布到包注册表。可直接用 Go 安装最新版：
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+```
+
+为了可复现安装，在发布标签后优先使用带版本的命令，例如 `@v0.1.0`。下面的 clone 工作流仍适合开发。
 
 ## 配置
 
@@ -52,6 +58,13 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 
 ## 快速开始
 
+从 GitHub 安装并运行：
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
+```
+
 克隆并本地运行：
 
 ```sh
@@ -67,8 +80,6 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 go build -o bin/readme-lingo ./cmd/readme-lingo
 ./bin/readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
 ```
-
-目前不记录 `go install github.com/codecat-ai/readme-lingo@latest` 命令，因为本项目尚未作为带标签的 Go module release 发布。
 
 ## 示例
 
@@ -99,17 +110,17 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 检查期望的译文是否存在，并且是否匹配当前源文件摘要：
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --targets zh,jp --output-dir . --check
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
-在生成文件顶部插入语言切换器：
+在源 README 和生成文件中自动管理顶部语言切换器：
 
 ```sh
 go run ./cmd/readme-lingo translate \
   --source README.md \
-  --targets zh,jp \
+  --targets zh,ja \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
+  --auto-switcher
 ```
 
 ## 开发
@@ -141,7 +152,7 @@ test -z "$(gofmt -l .)"
 - 针对大型 README 的更强 Markdown 感知分块
 - 可选术语表支持
 - 面向 CI 注释的更好 stale-check 报告
-- 发布标签和已发布 module 的安装说明
+- 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - 定时 README 同步工作流示例
 
 ## AI 辅助维护
@@ -152,4 +163,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:8d59d29bb03a33602d4558398241e727328cea79d9ea07f12867e336b5b06ef7","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:e6c351480bcad3a558f853b2e8bd055a6a251f074bc50585421335e7738bd8d1","generated":"2026-05-05T00:00:00Z"} -->

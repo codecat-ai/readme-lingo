@@ -6,7 +6,7 @@
 
 readme-lingo は、多言語 README を同期して保つための Go 製コマンドラインユーティリティです。OpenAI 互換の Chat Completions API を使ってソース Markdown ファイルを翻訳し、Markdown の構造をできるだけ維持しながらターゲットファイルを書き出します。また、後続のチェックで翻訳が古くなったか判断できるように、非表示のソース digest メタデータを埋め込みます。
 
-このプロジェクトは MIT ライセンスで、現時点では GitHub からクローンしてローカルでビルドする利用を想定しています。API キーを保存せず、リポジトリ、テスト、例、ログ、Issue 報告に本物のキーを入れる必要もありません。
+このプロジェクトは MIT ライセンスで、GitHub の Go module から `go install` で直接インストールできます。API キーを保存せず、リポジトリ、テスト、例、ログ、Issue 報告に本物のキーを入れる必要もありません。
 
 ## 問題と動機
 
@@ -19,11 +19,17 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - コードフェンス、リンク、表、front matter、HTML コメントを保つようモデルに指示し、Markdown 構造をできるだけ維持します。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認します。
-- 多言語 README ナビゲーション用の上部言語スイッチャーを挿入します。
+- 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
 
 ## インストール
 
-readme-lingo はまだパッケージレジストリに公開されていません。タグ付きリリースが利用可能になるまでは、以下の GitHub ローカルワークフローを使ってください。
+readme-lingo は GitHub 上の Go module なので、別途パッケージレジストリへ公開する必要はありません。最新版は Go で直接インストールできます:
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+```
+
+再現可能なインストールには、タグ付きリリース後に `@v0.1.0` のようなバージョン指定を推奨します。以下の clone ワークフローは開発用として引き続き有用です。
 
 ## 設定
 
@@ -52,6 +58,13 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 
 ## クイックスタート
 
+GitHub からインストールして実行します。
+
+```sh
+go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
+```
+
 クローンしてローカルで実行します。
 
 ```sh
@@ -67,8 +80,6 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 go build -o bin/readme-lingo ./cmd/readme-lingo
 ./bin/readme-lingo translate --source README.md --target zh --output README-zh.md --dry-run
 ```
-
-このプロジェクトはタグ付き Go module release としてまだ公開されていないため、`go install github.com/codecat-ai/readme-lingo@latest` はまだ案内していません。
 
 ## 例
 
@@ -99,17 +110,17 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 期待される翻訳ファイルが存在し、現在のソース digest と一致するか確認:
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --targets zh,jp --output-dir . --check
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
-生成ファイルの先頭に言語スイッチャーを挿入:
+ソース README と生成ファイルの上部言語スイッチャーを自動管理:
 
 ```sh
 go run ./cmd/readme-lingo translate \
   --source README.md \
-  --targets zh,jp \
+  --targets zh,ja \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
+  --auto-switcher
 ```
 
 ## 開発
@@ -141,7 +152,7 @@ test -z "$(gofmt -l .)"
 - 大きな README に向けた、より Markdown を意識した分割
 - オプションの用語集サポート
 - CI annotation 向けの stale-check レポート改善
-- リリースタグと公開 module 向けインストール手順
+- 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - 定期的な README 同期ワークフロー例
 
 ## AI 支援メンテナンス
@@ -152,4 +163,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"jp","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:8d59d29bb03a33602d4558398241e727328cea79d9ea07f12867e336b5b06ef7","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:e6c351480bcad3a558f853b2e8bd055a6a251f074bc50585421335e7738bd8d1","generated":"2026-05-05T00:00:00Z"} -->

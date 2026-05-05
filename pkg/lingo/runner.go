@@ -11,14 +11,15 @@ import (
 )
 
 type TranslateOptions struct {
-	SourcePath string
-	Targets    []string
-	OutputPath string
-	OutputDir  string
-	DryRun     bool
-	Switcher   string
-	Model      string
-	Now        func() time.Time
+	SourcePath   string
+	Targets      []string
+	OutputPath   string
+	OutputDir    string
+	DryRun       bool
+	Switcher     string
+	AutoSwitcher bool
+	Model        string
+	Now          func() time.Time
 }
 
 type TranslateResult struct {
@@ -55,11 +56,26 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 		model = DefaultModel
 	}
 	var switcher string
+	if opts.Switcher != "" && opts.AutoSwitcher {
+		return TranslateResult{}, errors.New("--switcher and --auto-switcher cannot be used together")
+	}
 	if opts.Switcher != "" {
 		switcher, err = BuildSwitcher(opts.Switcher)
 		if err != nil {
 			return TranslateResult{}, err
 		}
+	}
+	if opts.AutoSwitcher {
+		switcher, err = BuildAutoSwitcher(opts.SourcePath, plans)
+		if err != nil {
+			return TranslateResult{}, err
+		}
+		sourceWithSwitcher := InsertSwitcher(string(source), switcher)
+		if err := os.WriteFile(opts.SourcePath, []byte(sourceWithSwitcher), 0o644); err != nil {
+			return TranslateResult{}, err
+		}
+		source = []byte(sourceWithSwitcher)
+		fmt.Fprintf(logOrDiscard(log), "updated %s\n", opts.SourcePath)
 	}
 	for _, plan := range plans {
 		translated, err := translator.Translate(ctx, TranslateRequest{

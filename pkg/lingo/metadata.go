@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -78,6 +80,35 @@ func BuildSwitcher(spec string) (string, error) {
 		return "", ErrInvalidSwitcher
 	}
 	return switcherStart + "\n" + strings.Join(links, " | ") + "\n" + switcherEnd, nil
+}
+
+func BuildAutoSwitcher(sourcePath string, plans []OutputPlan) (string, error) {
+	if strings.TrimSpace(sourcePath) == "" {
+		return "", errors.New("source path is required")
+	}
+	sourceDir := filepath.Dir(filepath.Clean(sourcePath))
+	links := []string{"[English](" + filepath.ToSlash(filepath.Base(sourcePath)) + ")"}
+	for _, plan := range plans {
+		path := filepath.Clean(plan.OutputPath)
+		if rel, err := filepath.Rel(sourceDir, path); err == nil {
+			path = rel
+		}
+		links = append(links, "["+switcherLabel(plan.Target)+"]("+filepath.ToSlash(path)+")")
+	}
+	return switcherStart + "\n" + strings.Join(links, " | ") + "\n" + switcherEnd, nil
+}
+
+func switcherLabel(target string) string {
+	switch strings.ToLower(strings.TrimSpace(target)) {
+	case "en", "eng", "english":
+		return "English"
+	case "zh", "zh-cn", "cn", "chinese", "中文":
+		return "中文"
+	case "ja", "japanese", "日本語":
+		return "日本語"
+	default:
+		return strings.TrimSpace(target)
+	}
 }
 
 func InsertSwitcher(markdown string, switcher string) string {

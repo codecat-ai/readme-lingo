@@ -85,6 +85,49 @@ func TestRunTranslateMultipleTargetsWritesMetadata(t *testing.T) {
 	}
 }
 
+func TestRunTranslateAutoSwitcherUpdatesSourceAndTargets(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	translator := &recordingTranslator{}
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:   source,
+		Targets:      []string{"zh", "ja"},
+		OutputDir:    dir,
+		AutoSwitcher: true,
+		Model:        "test-model",
+		Now:          fixedNow,
+	}, translator, nil)
+	if err != nil {
+		t.Fatalf("RunTranslate returned error: %v", err)
+	}
+	sourceData, err := os.ReadFile(source)
+	if err != nil {
+		t.Fatalf("read source: %v", err)
+	}
+	for _, want := range []string{"[English](README.md)", "[中文](README-zh.md)", "[日本語](README-ja.md)"} {
+		if !strings.Contains(string(sourceData), want) {
+			t.Fatalf("source switcher missing %s: %s", want, sourceData)
+		}
+	}
+	for _, target := range []string{"zh", "ja"} {
+		output := filepath.Join(dir, "README-"+target+".md")
+		data, err := os.ReadFile(output)
+		if err != nil {
+			t.Fatalf("read output %s: %v", output, err)
+		}
+		if !strings.Contains(string(data), "[日本語](README-ja.md)") {
+			t.Fatalf("target switcher missing Japanese link: %s", data)
+		}
+		if !IsSynchronized(sourceData, data) {
+			t.Fatalf("%s metadata should match source after switcher update", output)
+		}
+	}
+}
+
 func TestRunCheckReportsMissingAndStaleFiles(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "README.md")

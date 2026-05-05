@@ -54,3 +54,20 @@ func TestInsertSwitcherReplacesExistingTopSwitcher(t *testing.T) {
 		t.Fatalf("switcher did not preserve spacing before body: %s", got)
 	}
 }
+
+func TestBuildAutoSwitcherUsesReadableLabelsAndRelativePaths(t *testing.T) {
+	plans := []OutputPlan{
+		{Target: "zh", OutputPath: "docs/README-zh.md"},
+		{Target: "ja", OutputPath: "docs/README-ja.md"},
+		{Target: "fr", OutputPath: "docs/README-fr.md"},
+	}
+
+	got, err := BuildAutoSwitcher("docs/README.md", plans)
+	if err != nil {
+		t.Fatalf("BuildAutoSwitcher returned error: %v", err)
+	}
+	want := "<!-- readme-lingo-switcher:start -->\n[English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md) | [fr](README-fr.md)\n<!-- readme-lingo-switcher:end -->"
+	if got != want {
+		t.Fatalf("auto switcher mismatch:\nwant %q\n got %q", want, got)
+	}
+}

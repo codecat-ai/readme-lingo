@@ -44,6 +44,7 @@ func runTranslate(args []string) error {
 	dryRun := fs.Bool("dry-run", false, "validate inputs and print planned outputs without calling the API")
 	check := fs.Bool("check", false, "verify translated files exist and match the source digest")
 	switcher := fs.String("switcher", "", "comma-separated target:path pairs for the top language switcher")
+	autoSwitcher := fs.Bool("auto-switcher", false, "automatically manage a top language switcher from the source and target outputs")
 	baseURL := fs.String("base-url", lingo.DefaultBaseURL, "OpenAI-compatible API base URL")
 	model := fs.String("model", lingo.DefaultModel, "chat completions model")
 	apiKeyEnv := fs.String("api-key-env", lingo.DefaultKeyEnv, "environment variable containing the API key")
@@ -84,13 +85,14 @@ func runTranslate(args []string) error {
 		APIKey:  apiKey,
 	})
 	_, err = lingo.RunTranslate(context.Background(), lingo.TranslateOptions{
-		SourcePath: *source,
-		Targets:    targets,
-		OutputPath: *output,
-		OutputDir:  *outputDir,
-		DryRun:     *dryRun,
-		Switcher:   *switcher,
-		Model:      *model,
+		SourcePath:   *source,
+		Targets:      targets,
+		OutputPath:   *output,
+		OutputDir:    *outputDir,
+		DryRun:       *dryRun,
+		Switcher:     *switcher,
+		AutoSwitcher: *autoSwitcher,
+		Model:        *model,
 	}, client, os.Stdout)
 	return err
 }
