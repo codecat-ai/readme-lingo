@@ -1,5 +1,5 @@
 <!-- readme-lingo-switcher:start -->
-[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
+[English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md)
 <!-- readme-lingo-switcher:end -->
 
 # readme-lingo
@@ -84,10 +84,10 @@ Translate multiple targets using default output names:
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .
 ```
 
-The default output name is `README-<target>.md`. If you want `README-jp.md` for repository convention while translating into Japanese, pass an explicit output for the single-target command:
+The default output name is `README-<target>.md`. If you want `README-ja.md` for repository convention while translating into Japanese, pass an explicit output for the single-target command:
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --target ja --output README-jp.md
+go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
 Show planned outputs without calling the API:
@@ -109,7 +109,7 @@ go run ./cmd/readme-lingo translate \
   --source README.md \
   --targets zh,jp \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,jp:README-jp.md"
+  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
 ```
 
 ## Development
