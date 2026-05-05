@@ -1,5 +1,5 @@
 <!-- readme-lingo-switcher:start -->
-[English](README.md) | [中文](README-zh.md) | [日本語](README-jp.md)
+[English](README.md) | [中文](README-zh.md) | [日本語](README-ja.md)
 <!-- readme-lingo-switcher:end -->
 
 # readme-lingo
@@ -84,10 +84,10 @@ go run ./cmd/readme-lingo translate --source README.md --target zh --output READ
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .
 ```
 
-默认输出名为 `README-<target>.md`。如果仓库约定使用 `README-jp.md`，但目标语言是日语，可以在单目标命令中显式指定输出：
+默认输出名为 `README-<target>.md`。日语使用标准语言代码 `ja`，因此默认日语输出为 `README-ja.md`。也可以在单目标命令中显式指定输出：
 
 ```sh
-go run ./cmd/readme-lingo translate --source README.md --target ja --output README-jp.md
+go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
 只显示计划输出，不调用 API：
@@ -109,7 +109,7 @@ go run ./cmd/readme-lingo translate \
   --source README.md \
   --targets zh,jp \
   --output-dir . \
-  --switcher "en:README.md,zh:README-zh.md,ja:README-jp.md"
+  --switcher "en:README.md,zh:README-zh.md,ja:README-ja.md"
 ```
 
 ## 开发
