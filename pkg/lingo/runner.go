@@ -15,6 +15,7 @@ type TranslateOptions struct {
 	Targets      []string
 	OutputPath   string
 	OutputDir    string
+	GlossaryPath string
 	DryRun       bool
 	Switcher     string
 	AutoSwitcher bool
@@ -46,6 +47,14 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 	source, err := os.ReadFile(opts.SourcePath)
 	if err != nil {
 		return TranslateResult{}, err
+	}
+	var glossary string
+	if opts.GlossaryPath != "" {
+		data, err := os.ReadFile(opts.GlossaryPath)
+		if err != nil {
+			return TranslateResult{}, fmt.Errorf("read glossary %q: %w", opts.GlossaryPath, err)
+		}
+		glossary = string(data)
 	}
 	now := opts.Now
 	if now == nil {
@@ -82,6 +91,7 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 			SourcePath: opts.SourcePath,
 			Target:     plan.Target,
 			Markdown:   string(source),
+			Glossary:   glossary,
 		})
 		if err != nil {
 			return TranslateResult{}, err

@@ -41,6 +41,7 @@ func runTranslate(args []string) error {
 	targetsValue := fs.String("targets", "", "comma-separated target language tags or names")
 	output := fs.String("output", "", "output file for a single target")
 	outputDir := fs.String("output-dir", "", "output directory for default target filenames")
+	glossary := fs.String("glossary", "", "UTF-8 text or Markdown file with project terminology guidance")
 	dryRun := fs.Bool("dry-run", false, "validate inputs and print planned outputs without calling the API")
 	check := fs.Bool("check", false, "verify translated files exist and match the source digest")
 	switcher := fs.String("switcher", "", "comma-separated target:path pairs for the top language switcher")
@@ -89,6 +90,7 @@ func runTranslate(args []string) error {
 		Targets:      targets,
 		OutputPath:   *output,
 		OutputDir:    *outputDir,
+		GlossaryPath: *glossary,
 		DryRun:       *dryRun,
 		Switcher:     *switcher,
 		AutoSwitcher: *autoSwitcher,

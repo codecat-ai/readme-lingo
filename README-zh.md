@@ -17,6 +17,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 将一个 README 或 Markdown 文件翻译为任意目标语言标签或语言名称。
 - 用一个命令翻译多个目标，并生成可预测的 `README-<target>.md` 输出。
 - 通过提示模型保留代码块、链接、表格、front matter 和 HTML 注释，尽量保持 Markdown 结构。
+- 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期。
 - 插入或自动管理用于多语言 README 导航的顶部语言切换器。
@@ -101,6 +102,14 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --outp
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+在真实翻译时使用术语表文件提供项目术语指导：
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --glossary GLOSSARY.md
+```
+
+术语表可以是 UTF-8 文本或 Markdown。它只会在命令执行真实翻译时加入翻译提示；`--dry-run` 和 `--check` 会接受该参数，但不会读取文件。
+
 只显示计划输出，不调用 API：
 
 ```sh
@@ -129,6 +138,7 @@ go run ./cmd/readme-lingo translate \
 
 - 面向 OpenAI 兼容 Chat Completions API 的翻译客户端
 - Markdown 翻译请求准备
+- 用于术语指导的可选术语表传递
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
 - 用于脚本化自动化的 dry-run 与 check 工作流
@@ -150,7 +160,6 @@ test -z "$(gofmt -l .)"
 ## 路线图
 
 - 针对大型 README 的更强 Markdown 感知分块
-- 可选术语表支持
 - 面向 CI 注释的更好 stale-check 报告
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - 定时 README 同步工作流示例
@@ -163,4 +172,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:e6c351480bcad3a558f853b2e8bd055a6a251f074bc50585421335e7738bd8d1","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:3f4ffaa0034195563af11aa97c0428a2fdb135b3f019d7395317d1c87be40b0e","generated":"2026-05-05T00:00:00Z"} -->
