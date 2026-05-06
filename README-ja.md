@@ -17,6 +17,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - 1 つの README または Markdown ファイルを任意の言語タグや言語名に翻訳します。
 - 複数ターゲットを 1 つのコマンドで翻訳し、予測しやすい `README-<target>.md` 出力を生成します。
 - コードフェンス、リンク、表、front matter、HTML コメントを保つようモデルに指示し、Markdown 構造をできるだけ維持します。
+- 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認します。
 - 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
@@ -101,6 +102,14 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --outp
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+実際に翻訳するときに、プロジェクト用語のガイダンスとして用語集ファイルを使います。
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --glossary GLOSSARY.md
+```
+
+用語集は UTF-8 のテキストまたは Markdown にできます。実際の翻訳時だけ翻訳プロンプトに含まれ、`--dry-run` と `--check` はこのフラグを受け付けますがファイルは読みません。
+
 API を呼び出さずに予定される出力だけを表示:
 
 ```sh
@@ -129,6 +138,7 @@ go run ./cmd/readme-lingo translate \
 
 - OpenAI 互換 Chat Completions API 用の翻訳クライアント
 - Markdown 翻訳リクエストの準備
+- 用語ガイダンスのための任意の用語集伝播
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
 - スクリプト化された自動化に向けた dry-run と check ワークフロー
@@ -150,7 +160,6 @@ test -z "$(gofmt -l .)"
 ## ロードマップ
 
 - 大きな README に向けた、より Markdown を意識した分割
-- オプションの用語集サポート
 - CI annotation 向けの stale-check レポート改善
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - 定期的な README 同期ワークフロー例
@@ -163,4 +172,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:e6c351480bcad3a558f853b2e8bd055a6a251f074bc50585421335e7738bd8d1","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:3f4ffaa0034195563af11aa97c0428a2fdb135b3f019d7395317d1c87be40b0e","generated":"2026-05-05T00:00:00Z"} -->

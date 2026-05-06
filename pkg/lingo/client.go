@@ -35,6 +35,7 @@ type TranslateRequest struct {
 	SourcePath string
 	Target     string
 	Markdown   string
+	Glossary   string
 }
 
 type Translator interface {
@@ -63,6 +64,11 @@ func (c *Client) Translate(ctx context.Context, req TranslateRequest) (string, e
 	if c.apiKey == "" {
 		return "", errors.New("API key is required")
 	}
+	userPrompt := fmt.Sprintf("Translate this Markdown file (%s) into %s. Return only the translated Markdown.", req.SourcePath, req.Target)
+	if strings.TrimSpace(req.Glossary) != "" {
+		userPrompt += fmt.Sprintf("\n\nUse this project glossary and terminology guidance while translating. Preserve named terms as instructed:\n\n%s", req.Glossary)
+	}
+	userPrompt += "\n\n" + req.Markdown
 	body := chatRequest{
 		Model: c.model,
 		Messages: []chatMessage{
@@ -72,7 +78,7 @@ func (c *Client) Translate(ctx context.Context, req TranslateRequest) (string, e
 			},
 			{
 				Role:    "user",
-				Content: fmt.Sprintf("Translate this Markdown file (%s) into %s. Return only the translated Markdown.\n\n%s", req.SourcePath, req.Target, req.Markdown),
+				Content: userPrompt,
 			},
 		},
 		Temperature: 0.2,

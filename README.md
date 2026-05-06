@@ -17,6 +17,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Translate one README or Markdown file into any target language tag or language name.
 - Translate multiple targets in one command with predictable `README-<target>.md` outputs.
 - Preserve Markdown-oriented structure by prompting the model to keep code fences, links, tables, front matter, and HTML comments intact.
+- Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API.
 - Insert or automatically manage a top language switcher for multilingual README navigation.
@@ -101,6 +102,14 @@ The default output name is `README-<target>.md`. Japanese uses the standard `ja`
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+Use a glossary file for project terminology guidance during real translations:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --glossary GLOSSARY.md
+```
+
+The glossary can be UTF-8 text or Markdown. It is included in translation prompts only when the command performs real translation; `--dry-run` and `--check` accept the flag without reading the file.
+
 Show planned outputs without calling the API:
 
 ```sh
@@ -129,6 +138,7 @@ The reusable package lives in `pkg/lingo` and covers:
 
 - translation client for OpenAI-compatible Chat Completions APIs
 - Markdown translation request preparation
+- optional glossary propagation for terminology guidance
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
 - dry-run and check workflows for scriptable automation
@@ -150,7 +160,6 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 ## Roadmap
 
 - More Markdown-aware chunking for large README files
-- Optional glossary support
 - Better stale-check reporting for CI annotations
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - Examples for scheduled README synchronization workflows

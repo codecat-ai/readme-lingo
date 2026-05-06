@@ -43,6 +43,7 @@ func TestClientTranslateUsesChatCompletionsShape(t *testing.T) {
 		SourcePath: "README.md",
 		Target:     "zh",
 		Markdown:   "# Title\n\nBody",
+		Glossary:   "Keep README as README.\nDo not translate readme-lingo.",
 	})
 	if err != nil {
 		t.Fatalf("Translate returned error: %v", err)
@@ -64,7 +65,9 @@ func TestClientTranslateUsesChatCompletionsShape(t *testing.T) {
 		t.Fatalf("messages payload malformed: %#v", payload["messages"])
 	}
 	combined, _ := json.Marshal(messages)
-	if !strings.Contains(string(combined), "preserve Markdown") || !strings.Contains(string(combined), "zh") {
+	if !strings.Contains(string(combined), "preserve Markdown") ||
+		!strings.Contains(string(combined), "zh") ||
+		!strings.Contains(string(combined), "Keep README as README") {
 		t.Fatalf("prompt did not include expected translation guidance: %s", combined)
 	}
 }

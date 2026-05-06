@@ -85,6 +85,86 @@ func TestRunTranslateMultipleTargetsWritesMetadata(t *testing.T) {
 	}
 }
 
+func TestRunTranslateIncludesGlossaryInEachRequest(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	glossary := filepath.Join(dir, "GLOSSARY.md")
+	glossaryText := "Keep CLI flag names unchanged.\nUse readme-lingo as the product name."
+	if err := os.WriteFile(glossary, []byte(glossaryText), 0o644); err != nil {
+		t.Fatalf("write glossary: %v", err)
+	}
+	translator := &recordingTranslator{}
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:   source,
+		Targets:      []string{"zh", "ja"},
+		OutputDir:    dir,
+		GlossaryPath: glossary,
+		Now:          fixedNow,
+	}, translator, nil)
+	if err != nil {
+		t.Fatalf("RunTranslate returned error: %v", err)
+	}
+	if len(translator.calls) != 2 {
+		t.Fatalf("translator calls = %d, want 2", len(translator.calls))
+	}
+	for _, call := range translator.calls {
+		if call.Glossary != glossaryText {
+			t.Fatalf("glossary for %s = %q, want %q", call.Target, call.Glossary, glossaryText)
+		}
+	}
+}
+
+func TestRunTranslateReturnsUsefulGlossaryReadError(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	glossary := filepath.Join(dir, "missing-glossary.md")
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:   source,
+		Targets:      []string{"zh"},
+		OutputDir:    dir,
+		GlossaryPath: glossary,
+		Now:          fixedNow,
+	}, &recordingTranslator{}, nil)
+	if err == nil {
+		t.Fatal("expected glossary read error")
+	}
+	if !strings.Contains(err.Error(), glossary) {
+		t.Fatalf("error %q does not mention glossary path %q", err, glossary)
+	}
+}
+
+func TestDryRunDoesNotReadGlossary(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	translator := &recordingTranslator{}
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:   source,
+		Targets:      []string{"zh"},
+		OutputDir:    dir,
+		GlossaryPath: filepath.Join(dir, "missing-glossary.md"),
+		DryRun:       true,
+		Now:          fixedNow,
+	}, translator, nil)
+	if err != nil {
+		t.Fatalf("dry-run should not read glossary: %v", err)
+	}
+	if len(translator.calls) != 0 {
+		t.Fatalf("dry-run called translator %d times", len(translator.calls))
+	}
+}
+
 func TestRunTranslateAutoSwitcherUpdatesSourceAndTargets(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "README.md")
