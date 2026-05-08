@@ -19,7 +19,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Preserve Markdown-oriented structure by prompting the model to keep code fences, links, tables, front matter, and HTML comments intact.
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
-- Check whether generated translations are missing or stale without calling the API.
+- Check whether generated translations are missing or stale without calling the API, with optional GitHub Actions error annotations.
 - Insert or automatically manage a top language switcher for multilingual README navigation.
 
 ## Installation
@@ -122,6 +122,12 @@ Check whether expected translations exist and match the current source digest:
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
+Emit GitHub Actions error annotations for missing or stale translations during checks:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
+```
+
 Automatically manage the top language switcher in the source and generated README files:
 
 ```sh
@@ -141,7 +147,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - optional glossary propagation for terminology guidance
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
-- dry-run and check workflows for scriptable automation
+- dry-run and check workflows for scriptable automation, including GitHub Actions annotations
 
 The CLI in `cmd/readme-lingo` is intentionally thin and delegates behavior to the package.
 
@@ -155,12 +161,11 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-Unit tests use fake HTTP transports and temporary files. They do not call real APIs and do not require API keys.
+Unit tests use fake HTTP transports and temporary files. They do not call real APIs, do not require API keys, and cover `--check --github-annotations` without reading glossary files.
 
 ## Roadmap
 
 - More Markdown-aware chunking for large README files
-- Better stale-check reporting for CI annotations
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - Examples for scheduled README synchronization workflows
 

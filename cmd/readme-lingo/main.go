@@ -44,6 +44,7 @@ func runTranslate(args []string) error {
 	glossary := fs.String("glossary", "", "UTF-8 text or Markdown file with project terminology guidance")
 	dryRun := fs.Bool("dry-run", false, "validate inputs and print planned outputs without calling the API")
 	check := fs.Bool("check", false, "verify translated files exist and match the source digest")
+	githubAnnotations := fs.Bool("github-annotations", false, "emit GitHub Actions annotations for --check failures")
 	switcher := fs.String("switcher", "", "comma-separated target:path pairs for the top language switcher")
 	autoSwitcher := fs.Bool("auto-switcher", false, "automatically manage a top language switcher from the source and target outputs")
 	baseURL := fs.String("base-url", lingo.DefaultBaseURL, "OpenAI-compatible API base URL")
@@ -66,9 +67,15 @@ func runTranslate(args []string) error {
 		})
 		for _, plan := range result.Missing {
 			fmt.Fprintf(os.Stdout, "missing: %s\n", plan.OutputPath)
+			if *githubAnnotations {
+				printGitHubAnnotation(plan, "missing translation", "Missing translation output "+plan.OutputPath)
+			}
 		}
 		for _, plan := range result.Stale {
 			fmt.Fprintf(os.Stdout, "stale: %s\n", plan.OutputPath)
+			if *githubAnnotations {
+				printGitHubAnnotation(plan, "stale translation", "Stale translation output "+plan.OutputPath)
+			}
 		}
 		if err == nil {
 			fmt.Fprintln(os.Stdout, "ok: translations are synchronized")
@@ -97,6 +104,23 @@ func runTranslate(args []string) error {
 		Model:        *model,
 	}, client, os.Stdout)
 	return err
+}
+
+func printGitHubAnnotation(plan lingo.OutputPlan, title string, message string) {
+	fmt.Fprintf(
+		os.Stdout,
+		"::error file=%s,title=%s::%s\n",
+		escapeGitHubAnnotationData(plan.SourcePath),
+		escapeGitHubAnnotationData(title),
+		escapeGitHubAnnotationData(message),
+	)
+}
+
+func escapeGitHubAnnotationData(value string) string {
+	value = strings.ReplaceAll(value, "%", "%25")
+	value = strings.ReplaceAll(value, "\r", "%0D")
+	value = strings.ReplaceAll(value, "\n", "%0A")
+	return value
 }
 
 func collectTargets(target string, targetsValue string) ([]string, error) {
