@@ -19,7 +19,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - コードフェンス、リンク、表、front matter、HTML コメントを保つようモデルに指示し、Markdown 構造をできるだけ維持します。
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
-- API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認します。
+- API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認し、必要に応じて GitHub Actions error annotations を出力します。
 - 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
 
 ## インストール
@@ -122,6 +122,12 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
+チェック時に欠落または古い翻訳の GitHub Actions error annotations を出力:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
+```
+
 ソース README と生成ファイルの上部言語スイッチャーを自動管理:
 
 ```sh
@@ -141,7 +147,7 @@ go run ./cmd/readme-lingo translate \
 - 用語ガイダンスのための任意の用語集伝播
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
-- スクリプト化された自動化に向けた dry-run と check ワークフロー
+- スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
 
 `cmd/readme-lingo` の CLI は意図的に薄くし、挙動をパッケージに委譲しています。
 
@@ -155,12 +161,11 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要です。
+ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要で、用語集ファイルを読まない `--check --github-annotations` もカバーします。
 
 ## ロードマップ
 
 - 大きな README に向けた、より Markdown を意識した分割
-- CI annotation 向けの stale-check レポート改善
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - 定期的な README 同期ワークフロー例
 
@@ -172,4 +177,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:3f4ffaa0034195563af11aa97c0428a2fdb135b3f019d7395317d1c87be40b0e","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:fe0d70f1e1bfdae6744e948fe1487ccd59c9a103d783c77987a9f13a7dfde081","generated":"2026-05-05T00:00:00Z"} -->

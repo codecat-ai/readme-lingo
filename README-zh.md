@@ -19,7 +19,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 通过提示模型保留代码块、链接、表格、front matter 和 HTML 注释，尽量保持 Markdown 结构。
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
-- 无需调用 API 即可检查生成的译文是否缺失或过期。
+- 无需调用 API 即可检查生成的译文是否缺失或过期，并可选择输出 GitHub Actions error annotations。
 - 插入或自动管理用于多语言 README 导航的顶部语言切换器。
 
 ## 安装
@@ -122,6 +122,12 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
 
+在检查时为缺失或过期译文输出 GitHub Actions error annotations：
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
+```
+
 在源 README 和生成文件中自动管理顶部语言切换器：
 
 ```sh
@@ -141,7 +147,7 @@ go run ./cmd/readme-lingo translate \
 - 用于术语指导的可选术语表传递
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
-- 用于脚本化自动化的 dry-run 与 check 工作流
+- 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
 
 `cmd/readme-lingo` 中的 CLI 有意保持精简，把行为委托给包实现。
 
@@ -155,12 +161,11 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key。
+单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key，并覆盖不会读取术语表文件的 `--check --github-annotations`。
 
 ## 路线图
 
 - 针对大型 README 的更强 Markdown 感知分块
-- 面向 CI 注释的更好 stale-check 报告
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - 定时 README 同步工作流示例
 
@@ -172,4 +177,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:3f4ffaa0034195563af11aa97c0428a2fdb135b3f019d7395317d1c87be40b0e","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:fe0d70f1e1bfdae6744e948fe1487ccd59c9a103d783c77987a9f13a7dfde081","generated":"2026-05-05T00:00:00Z"} -->
