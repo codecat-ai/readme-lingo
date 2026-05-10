@@ -18,6 +18,15 @@ func (r *recordingTranslator) Translate(_ context.Context, req TranslateRequest)
 	return "# Translated " + req.Target + "\n", nil
 }
 
+type echoingTranslator struct {
+	calls []TranslateRequest
+}
+
+func (e *echoingTranslator) Translate(_ context.Context, req TranslateRequest) (string, error) {
+	e.calls = append(e.calls, req)
+	return "[translated]\n" + req.Markdown + "\n", nil
+}
+
 func TestDryRunPlansOutputsWithoutNetwork(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "README.md")
@@ -115,6 +124,99 @@ func TestRunTranslateIncludesGlossaryInEachRequest(t *testing.T) {
 		if call.Glossary != glossaryText {
 			t.Fatalf("glossary for %s = %q, want %q", call.Target, call.Glossary, glossaryText)
 		}
+	}
+}
+
+func TestRunTranslateChunkHeadingsTranslatesEachChunkAndAggregatesOnce(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	markdown := strings.Join([]string{
+		"# Demo",
+		"Intro.",
+		"",
+		"## Install",
+		"Install text.",
+		"",
+		"## Usage",
+		"Usage text.",
+		"",
+	}, "\n")
+	if err := os.WriteFile(source, []byte(markdown), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	translator := &echoingTranslator{}
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:    source,
+		Targets:       []string{"zh"},
+		OutputDir:     dir,
+		ChunkHeadings: true,
+		MaxChunkChars: 35,
+		Model:         "test-model",
+		Now:           fixedNow,
+	}, translator, nil)
+	if err != nil {
+		t.Fatalf("RunTranslate returned error: %v", err)
+	}
+	if len(translator.calls) != 3 {
+		t.Fatalf("translator calls = %d, want 3: %#v", len(translator.calls), translator.calls)
+	}
+	wantCalls := []string{
+		"# Demo\nIntro.",
+		"## Install\nInstall text.",
+		"## Usage\nUsage text.",
+	}
+	for i, want := range wantCalls {
+		if translator.calls[i].Markdown != want {
+			t.Fatalf("call %d markdown = %q, want %q", i, translator.calls[i].Markdown, want)
+		}
+	}
+	output := filepath.Join(dir, "README-zh.md")
+	data, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatalf("read output: %v", err)
+	}
+	text := string(data)
+	for _, want := range []string{
+		"[translated]\n# Demo\nIntro.",
+		"[translated]\n## Install\nInstall text.",
+		"[translated]\n## Usage\nUsage text.",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("output missing translated chunk %q:\n%s", want, text)
+		}
+	}
+	if strings.Count(text, metadataPrefix) != 1 {
+		t.Fatalf("metadata marker count = %d, want 1:\n%s", strings.Count(text, metadataPrefix), text)
+	}
+	if !strings.Contains(text, "Intro.\n\n[translated]\n## Install") {
+		t.Fatalf("chunks were not separated by one blank line:\n%s", text)
+	}
+	if !IsSynchronized([]byte(markdown), data) {
+		t.Fatalf("output is not synchronized:\n%s", data)
+	}
+}
+
+func TestRunTranslateChunkHeadingsRejectsNonPositiveMaxChars(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	_, err := RunTranslate(context.Background(), TranslateOptions{
+		SourcePath:    source,
+		Targets:       []string{"zh"},
+		OutputDir:     dir,
+		ChunkHeadings: true,
+		MaxChunkChars: 0,
+		Now:           fixedNow,
+	}, &recordingTranslator{}, nil)
+	if err == nil {
+		t.Fatal("expected max chars error")
+	}
+	if !strings.Contains(err.Error(), "max chars must be positive") {
+		t.Fatalf("error = %q, want clear max chars message", err)
 	}
 }
 

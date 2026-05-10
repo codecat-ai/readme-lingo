@@ -81,6 +81,8 @@ func runTranslate(args []string) error {
 	githubAnnotations := fs.Bool("github-annotations", false, "emit GitHub Actions annotations for --check failures")
 	switcher := fs.String("switcher", "", "comma-separated target:path pairs for the top language switcher")
 	autoSwitcher := fs.Bool("auto-switcher", false, "automatically manage a top language switcher from the source and target outputs")
+	chunkHeadings := fs.Bool("chunk-headings", false, "split Markdown into heading-aware translation chunks")
+	maxChars := fs.Int("max-chars", lingo.DefaultMaxChunkChars, "maximum characters per heading chunk")
 	baseURL := fs.String("base-url", lingo.DefaultBaseURL, "OpenAI-compatible API base URL")
 	model := fs.String("model", lingo.DefaultModel, "chat completions model")
 	apiKeyEnv := fs.String("api-key-env", lingo.DefaultKeyEnv, "environment variable containing the API key")
@@ -91,6 +93,9 @@ func runTranslate(args []string) error {
 	targets, err := collectTargets(*target, *targetsValue)
 	if err != nil {
 		return err
+	}
+	if *maxChars <= 0 {
+		return errors.New("max chars must be positive")
 	}
 	if *check {
 		result, err := lingo.RunCheck(lingo.CheckOptions{
@@ -127,15 +132,17 @@ func runTranslate(args []string) error {
 		APIKey:  apiKey,
 	})
 	_, err = lingo.RunTranslate(context.Background(), lingo.TranslateOptions{
-		SourcePath:   *source,
-		Targets:      targets,
-		OutputPath:   *output,
-		OutputDir:    *outputDir,
-		GlossaryPath: *glossary,
-		DryRun:       *dryRun,
-		Switcher:     *switcher,
-		AutoSwitcher: *autoSwitcher,
-		Model:        *model,
+		SourcePath:    *source,
+		Targets:       targets,
+		OutputPath:    *output,
+		OutputDir:     *outputDir,
+		GlossaryPath:  *glossary,
+		DryRun:        *dryRun,
+		ChunkHeadings: *chunkHeadings,
+		MaxChunkChars: *maxChars,
+		Switcher:      *switcher,
+		AutoSwitcher:  *autoSwitcher,
+		Model:         *model,
 	}, client, os.Stdout)
 	return err
 }

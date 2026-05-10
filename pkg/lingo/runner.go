@@ -7,20 +7,23 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 type TranslateOptions struct {
-	SourcePath   string
-	Targets      []string
-	OutputPath   string
-	OutputDir    string
-	GlossaryPath string
-	DryRun       bool
-	Switcher     string
-	AutoSwitcher bool
-	Model        string
-	Now          func() time.Time
+	SourcePath    string
+	Targets       []string
+	OutputPath    string
+	OutputDir     string
+	GlossaryPath  string
+	DryRun        bool
+	ChunkHeadings bool
+	MaxChunkChars int
+	Switcher      string
+	AutoSwitcher  bool
+	Model         string
+	Now           func() time.Time
 }
 
 type TranslateResult struct {
@@ -43,6 +46,9 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 	}
 	if translator == nil {
 		return TranslateResult{}, errors.New("translator is required")
+	}
+	if opts.ChunkHeadings && opts.MaxChunkChars <= 0 {
+		return TranslateResult{}, errors.New("max chars must be positive")
 	}
 	source, err := os.ReadFile(opts.SourcePath)
 	if err != nil {
@@ -87,12 +93,12 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 		fmt.Fprintf(logOrDiscard(log), "updated %s\n", opts.SourcePath)
 	}
 	for _, plan := range plans {
-		translated, err := translator.Translate(ctx, TranslateRequest{
+		translated, err := translateMarkdown(ctx, translator, TranslateRequest{
 			SourcePath: opts.SourcePath,
 			Target:     plan.Target,
 			Markdown:   string(source),
 			Glossary:   glossary,
-		})
+		}, opts.ChunkHeadings, opts.MaxChunkChars)
 		if err != nil {
 			return TranslateResult{}, err
 		}
@@ -115,6 +121,27 @@ func RunTranslate(ctx context.Context, opts TranslateOptions, translator Transla
 		fmt.Fprintf(logOrDiscard(log), "wrote %s\n", plan.OutputPath)
 	}
 	return TranslateResult{Plans: plans}, nil
+}
+
+func translateMarkdown(ctx context.Context, translator Translator, req TranslateRequest, chunkHeadings bool, maxChunkChars int) (string, error) {
+	if !chunkHeadings {
+		return translator.Translate(ctx, req)
+	}
+	chunks, err := PlanMarkdownChunks(req.Markdown, maxChunkChars)
+	if err != nil {
+		return "", err
+	}
+	translatedChunks := make([]string, 0, len(chunks))
+	for _, chunk := range chunks {
+		chunkReq := req
+		chunkReq.Markdown = chunk.Markdown
+		translated, err := translator.Translate(ctx, chunkReq)
+		if err != nil {
+			return "", err
+		}
+		translatedChunks = append(translatedChunks, strings.Trim(translated, "\n"))
+	}
+	return strings.Join(translatedChunks, "\n\n"), nil
 }
 
 type CheckOptions struct {
