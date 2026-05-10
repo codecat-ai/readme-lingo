@@ -20,17 +20,51 @@ func main() {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return usageError("expected subcommand: translate")
+		return usageError("expected subcommand: translate or workflow")
 	}
 	switch args[0] {
 	case "translate":
 		return runTranslate(args[1:])
+	case "workflow":
+		return runWorkflow(args[1:])
 	case "help", "-h", "--help":
 		printUsage()
 		return nil
 	default:
 		return usageError("unknown subcommand: " + args[0])
 	}
+}
+
+func runWorkflow(args []string) error {
+	fs := flag.NewFlagSet("workflow", flag.ContinueOnError)
+	fs.SetOutput(os.Stderr)
+	source := fs.String("source", lingo.DefaultWorkflowSource, "source Markdown file")
+	targetsValue := fs.String("targets", "", "comma-separated target language tags or names")
+	outputDir := fs.String("output-dir", lingo.DefaultWorkflowOutputDir, "output directory for default target filenames")
+	goVersion := fs.String("go-version", lingo.DefaultWorkflowGoVersion, "Go version for actions/setup-go")
+	name := fs.String("name", lingo.DefaultWorkflowName, "GitHub Actions workflow name")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if strings.TrimSpace(*targetsValue) == "" {
+		return errors.New("provide --targets")
+	}
+	targets, err := lingo.SplitTargets(*targetsValue)
+	if err != nil {
+		return fmt.Errorf("invalid --targets: %w", err)
+	}
+	workflow, err := lingo.RenderWorkflow(lingo.WorkflowOptions{
+		Name:      *name,
+		Source:    *source,
+		Targets:   targets,
+		OutputDir: *outputDir,
+		GoVersion: *goVersion,
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(os.Stdout, workflow)
+	return nil
 }
 
 func runTranslate(args []string) error {
@@ -150,4 +184,5 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "Usage:")
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --target zh --output README-zh.md")
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .")
+	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --targets zh,ja")
 }

@@ -20,6 +20,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期，并可选择输出 GitHub Actions error annotations。
+- 生成 GitHub Actions workflow，用于在定时任务和 pull request 中运行过期译文检查。
 - 插入或自动管理用于多语言 README 导航的顶部语言切换器。
 
 ## 安装
@@ -128,6 +129,23 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
+生成用于定时任务和 pull request 过期译文检查的 GitHub Actions workflow：
+
+```sh
+go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
+```
+
+当 README 路径或 Go 设置不同时，可以自定义生成的 workflow：
+
+```sh
+go run ./cmd/readme-lingo workflow \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs \
+  --go-version 1.22.x \
+  --name "Docs translation check"
+```
+
 在源 README 和生成文件中自动管理顶部语言切换器：
 
 ```sh
@@ -148,6 +166,7 @@ go run ./cmd/readme-lingo translate \
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
 - 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
+- 用于定时过期译文检查的 GitHub Actions workflow 模板生成
 
 `cmd/readme-lingo` 中的 CLI 有意保持精简，把行为委托给包实现。
 
@@ -167,7 +186,7 @@ test -z "$(gofmt -l .)"
 
 - 针对大型 README 的更强 Markdown 感知分块
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
-- 定时 README 同步工作流示例
+- GitHub Actions 之外的其他 CI workflow 模板
 
 ## AI 辅助维护
 

@@ -20,6 +20,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API, with optional GitHub Actions error annotations.
+- Generate a GitHub Actions workflow that runs scheduled and pull request stale-translation checks.
 - Insert or automatically manage a top language switcher for multilingual README navigation.
 
 ## Installation
@@ -128,6 +129,23 @@ Emit GitHub Actions error annotations for missing or stale translations during c
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
+Generate a GitHub Actions workflow for scheduled and pull request stale-translation checks:
+
+```sh
+go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
+```
+
+Customize the generated workflow when your README or Go setup differs:
+
+```sh
+go run ./cmd/readme-lingo workflow \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs \
+  --go-version 1.22.x \
+  --name "Docs translation check"
+```
+
 Automatically manage the top language switcher in the source and generated README files:
 
 ```sh
@@ -148,6 +166,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
 - dry-run and check workflows for scriptable automation, including GitHub Actions annotations
+- GitHub Actions workflow template generation for scheduled stale-translation checks
 
 The CLI in `cmd/readme-lingo` is intentionally thin and delegates behavior to the package.
 
@@ -167,7 +186,7 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 
 - More Markdown-aware chunking for large README files
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
-- Examples for scheduled README synchronization workflows
+- Additional CI workflow templates beyond GitHub Actions
 
 ## AI-Assisted Maintenance
 
