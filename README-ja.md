@@ -20,6 +20,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認し、必要に応じて GitHub Actions error annotations を出力します。
+- スケジュール実行と pull request で古い翻訳をチェックする GitHub Actions workflow を生成します。
 - 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
 
 ## インストール
@@ -128,6 +129,23 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
+スケジュール実行と pull request で古い翻訳をチェックする GitHub Actions workflow を生成:
+
+```sh
+go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
+```
+
+README の場所や Go の設定が異なる場合は、生成される workflow をカスタマイズできます。
+
+```sh
+go run ./cmd/readme-lingo workflow \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs \
+  --go-version 1.22.x \
+  --name "Docs translation check"
+```
+
 ソース README と生成ファイルの上部言語スイッチャーを自動管理:
 
 ```sh
@@ -148,6 +166,7 @@ go run ./cmd/readme-lingo translate \
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
 - スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
+- スケジュールされた古い翻訳チェック向けの GitHub Actions workflow テンプレート生成
 
 `cmd/readme-lingo` の CLI は意図的に薄くし、挙動をパッケージに委譲しています。
 
@@ -167,7 +186,7 @@ test -z "$(gofmt -l .)"
 
 - 大きな README に向けた、より Markdown を意識した分割
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
-- 定期的な README 同期ワークフロー例
+- GitHub Actions 以外の CI workflow テンプレート
 
 ## AI 支援メンテナンス
 

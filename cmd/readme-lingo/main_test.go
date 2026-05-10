@@ -171,6 +171,16 @@ func TestTranslateGitHubAnnotationsFlagHasNoEffectWithoutCheck(t *testing.T) {
 	}
 }
 
+func TestWorkflowRequiresTargetsFlag(t *testing.T) {
+	err := run([]string{"workflow"})
+	if err == nil {
+		t.Fatal("expected missing targets error")
+	}
+	if !strings.Contains(err.Error(), "--targets") {
+		t.Fatalf("error should mention --targets, got %q", err)
+	}
+}
+
 func captureStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	original := os.Stdout
