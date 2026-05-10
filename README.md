@@ -17,6 +17,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Translate one README or Markdown file into any target language tag or language name.
 - Translate multiple targets in one command with predictable `README-<target>.md` outputs.
 - Preserve Markdown-oriented structure by prompting the model to keep code fences, links, tables, front matter, and HTML comments intact.
+- Optionally split large Markdown sources into heading-aware chunks so each translation request stays smaller while output order and one metadata footer are preserved.
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API, with optional GitHub Actions error annotations.
@@ -111,6 +112,14 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 
 The glossary can be UTF-8 text or Markdown. It is included in translation prompts only when the command performs real translation; `--dry-run` and `--check` accept the flag without reading the file.
 
+Opt in to heading-aware chunking for large README files:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --chunk-headings --max-chars 12000
+```
+
+`--chunk-headings` splits on Markdown heading boundaries outside fenced code blocks. Sections larger than `--max-chars` stay intact instead of being split mid-section, and the generated target still receives one readme-lingo metadata footer. `--dry-run` and `--check` accept the chunking flags without calling the API.
+
 Show planned outputs without calling the API:
 
 ```sh
@@ -162,6 +171,7 @@ The reusable package lives in `pkg/lingo` and covers:
 
 - translation client for OpenAI-compatible Chat Completions APIs
 - Markdown translation request preparation
+- heading-aware chunk planning for large Markdown translation requests
 - optional glossary propagation for terminology guidance
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
@@ -184,7 +194,6 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 
 ## Roadmap
 
-- More Markdown-aware chunking for large README files
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - Additional CI workflow templates beyond GitHub Actions
 

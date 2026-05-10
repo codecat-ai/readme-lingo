@@ -31,6 +31,27 @@ func TestTranslateDryRunAcceptsGlossaryWithoutReadingIt(t *testing.T) {
 	}
 }
 
+func TestTranslateDryRunAcceptsChunkFlagsWithoutNetwork(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	err := run([]string{
+		"translate",
+		"--source", source,
+		"--target", "zh",
+		"--output", filepath.Join(dir, "README-zh.md"),
+		"--chunk-headings",
+		"--max-chars", "10",
+		"--dry-run",
+	})
+	if err != nil {
+		t.Fatalf("dry-run should accept chunk flags: %v", err)
+	}
+}
+
 func TestTranslateCheckAcceptsGlossaryWithoutReadingIt(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "README.md")
@@ -52,6 +73,46 @@ func TestTranslateCheckAcceptsGlossaryWithoutReadingIt(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), glossary) {
 		t.Fatalf("check should not read glossary; got error %q", err)
+	}
+}
+
+func TestTranslateCheckAcceptsChunkFlagsWithoutNetwork(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	err := run([]string{
+		"translate",
+		"--source", source,
+		"--target", "zh",
+		"--output", filepath.Join(dir, "README-zh.md"),
+		"--chunk-headings",
+		"--max-chars", "10",
+		"--check",
+	})
+	if err == nil {
+		t.Fatal("expected missing translation error")
+	}
+	if strings.Contains(err.Error(), "API key") {
+		t.Fatalf("check should not require API key; got error %q", err)
+	}
+}
+
+func TestTranslateRejectsNonPositiveMaxChars(t *testing.T) {
+	err := run([]string{
+		"translate",
+		"--source", "README.md",
+		"--target", "zh",
+		"--chunk-headings",
+		"--max-chars", "0",
+	})
+	if err == nil {
+		t.Fatal("expected max chars error")
+	}
+	if !strings.Contains(err.Error(), "max chars must be positive") {
+		t.Fatalf("error = %q, want clear max chars message", err)
 	}
 }
 

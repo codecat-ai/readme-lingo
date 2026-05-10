@@ -17,6 +17,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - 1 つの README または Markdown ファイルを任意の言語タグや言語名に翻訳します。
 - 複数ターゲットを 1 つのコマンドで翻訳し、予測しやすい `README-<target>.md` 出力を生成します。
 - コードフェンス、リンク、表、front matter、HTML コメントを保つようモデルに指示し、Markdown 構造をできるだけ維持します。
+- 大きな Markdown ソースを見出し単位のチャンクに分けることで、各翻訳リクエストを小さく保ちながら、出力順と 1 つのメタデータ footer を維持できます。
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認し、必要に応じて GitHub Actions error annotations を出力します。
@@ -111,6 +112,14 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 
 用語集は UTF-8 のテキストまたは Markdown にできます。実際の翻訳時だけ翻訳プロンプトに含まれ、`--dry-run` と `--check` はこのフラグを受け付けますがファイルは読みません。
 
+大きな README ファイルでは、見出し単位のチャンク分割を有効にできます。
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --chunk-headings --max-chars 12000
+```
+
+`--chunk-headings` は fenced code block の外側にある Markdown 見出し境界で分割します。`--max-chars` を超える section は section 内で分割せず、そのまま 1 チャンクとして扱います。生成される対象ファイルには readme-lingo メタデータ footer が 1 つだけ付きます。`--dry-run` と `--check` はこれらのチャンク分割フラグを受け付けますが、API は呼び出しません。
+
 API を呼び出さずに予定される出力だけを表示:
 
 ```sh
@@ -162,6 +171,7 @@ go run ./cmd/readme-lingo translate \
 
 - OpenAI 互換 Chat Completions API 用の翻訳クライアント
 - Markdown 翻訳リクエストの準備
+- 大きな Markdown 翻訳リクエスト向けの見出し単位チャンク計画
 - 用語ガイダンスのための任意の用語集伝播
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
@@ -184,7 +194,6 @@ test -z "$(gofmt -l .)"
 
 ## ロードマップ
 
-- 大きな README に向けた、より Markdown を意識した分割
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - GitHub Actions 以外の CI workflow テンプレート
 
@@ -196,4 +205,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:fe0d70f1e1bfdae6744e948fe1487ccd59c9a103d783c77987a9f13a7dfde081","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:450f3e41f10f41f174bcf014fdbf6d67042fe4a106f370638f52a55da0ce0a8d","generated":"2026-05-05T00:00:00Z"} -->

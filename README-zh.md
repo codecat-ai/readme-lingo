@@ -17,6 +17,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 将一个 README 或 Markdown 文件翻译为任意目标语言标签或语言名称。
 - 用一个命令翻译多个目标，并生成可预测的 `README-<target>.md` 输出。
 - 通过提示模型保留代码块、链接、表格、front matter 和 HTML 注释，尽量保持 Markdown 结构。
+- 可选地把大型 Markdown 源文件按标题感知地分块，让每次翻译请求更小，同时保留输出顺序并只写入一个元数据 footer。
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期，并可选择输出 GitHub Actions error annotations。
@@ -111,6 +112,14 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 
 术语表可以是 UTF-8 文本或 Markdown。它只会在命令执行真实翻译时加入翻译提示；`--dry-run` 和 `--check` 会接受该参数，但不会读取文件。
 
+为大型 README 文件启用按标题感知的分块：
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --chunk-headings --max-chars 12000
+```
+
+`--chunk-headings` 会在 fenced code block 之外的 Markdown 标题边界处分块。超过 `--max-chars` 的 section 会保持完整，不会在 section 内部拆分；生成的目标文件仍然只会收到一个 readme-lingo 元数据 footer。`--dry-run` 和 `--check` 会接受这些分块参数，但不会调用 API。
+
 只显示计划输出，不调用 API：
 
 ```sh
@@ -162,6 +171,7 @@ go run ./cmd/readme-lingo translate \
 
 - 面向 OpenAI 兼容 Chat Completions API 的翻译客户端
 - Markdown 翻译请求准备
+- 面向大型 Markdown 翻译请求的标题感知分块规划
 - 用于术语指导的可选术语表传递
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
@@ -184,7 +194,6 @@ test -z "$(gofmt -l .)"
 
 ## 路线图
 
-- 针对大型 README 的更强 Markdown 感知分块
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - GitHub Actions 之外的其他 CI workflow 模板
 
@@ -196,4 +205,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:fe0d70f1e1bfdae6744e948fe1487ccd59c9a103d783c77987a9f13a7dfde081","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:450f3e41f10f41f174bcf014fdbf6d67042fe4a106f370638f52a55da0ce0a8d","generated":"2026-05-05T00:00:00Z"} -->
