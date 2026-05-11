@@ -44,6 +44,8 @@ func runWorkflow(args []string) error {
 	goVersion := fs.String("go-version", lingo.DefaultWorkflowGoVersion, "Go version for generated CI setup")
 	name := fs.String("name", lingo.DefaultWorkflowName, "workflow name for GitHub Actions or job name for GitLab CI")
 	platform := fs.String("platform", lingo.DefaultWorkflowPlatform, "workflow platform: github or gitlab")
+	schedule := fs.String("schedule", "", "cron schedule for generated workflow checks")
+	branchesValue := fs.String("branches", "", "comma-separated branch filters for generated workflow checks")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -61,12 +63,26 @@ func runWorkflow(args []string) error {
 		Targets:   targets,
 		OutputDir: *outputDir,
 		GoVersion: *goVersion,
+		Schedule:  *schedule,
+		Branches:  splitOptionalList(*branchesValue),
 	})
 	if err != nil {
 		return err
 	}
 	fmt.Fprint(os.Stdout, workflow)
 	return nil
+}
+
+func splitOptionalList(value string) []string {
+	parts := strings.Split(value, ",")
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			items = append(items, part)
+		}
+	}
+	return items
 }
 
 func runTranslate(args []string) error {
@@ -194,5 +210,5 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --target zh --output README-zh.md")
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .")
 	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --targets zh,ja")
-	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --platform gitlab --targets zh,ja")
+	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --platform gitlab --targets zh,ja --schedule '30 2 * * 1' --branches main,release")
 }

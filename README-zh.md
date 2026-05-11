@@ -159,8 +159,12 @@ go run ./cmd/readme-lingo workflow \
   --targets zh,ja \
   --output-dir docs \
   --go-version 1.22.x \
-  --name "Docs translation check"
+  --name "Docs translation check" \
+  --schedule "30 2 * * 1" \
+  --branches main,release
 ```
+
+`--schedule` 会把 GitHub Actions cron 从默认的 `0 0 * * 1` 改为指定值。对于 GitLab CI，生成的 YAML 会包含提示注释，因为 pipeline schedule 需要在 GitLab 中配置，而不是在 job YAML 中配置。`--branches` 会为 GitHub 添加 pull request 分支过滤，并为 GitLab 添加分支感知 rules；GitHub 的定时 workflow 仍在默认分支运行，因此生成的 job 会包含用于定时检查的 `if:` guard。
 
 在源 README 和生成文件中自动管理顶部语言切换器：
 
@@ -183,7 +187,7 @@ go run ./cmd/readme-lingo translate \
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
 - 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
-- 用于定时过期译文检查的 GitHub Actions 和 GitLab CI 模板生成
+- 用于定时过期译文检查的 GitHub Actions 和 GitLab CI 模板生成，并支持可选分支过滤
 
 `cmd/readme-lingo` 中的 CLI 有意保持精简，把行为委托给包实现。
 
@@ -202,7 +206,8 @@ test -z "$(gofmt -l .)"
 ## 路线图
 
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
-- 生成的 CI 模板支持可配置的 schedule 和分支过滤
+- 用于下载二进制文件的一等 release artifacts 和 checksums
+- 可配置的译文 README 变体输出命名模式
 
 ## AI 辅助维护
 
@@ -212,4 +217,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:93e9929488b28b72320ac7f290a0cf666cecb5dd249414213fdcdb07d5b6a8b8","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:69531542c29124f3f6759fb6c0e5ff823417fa5b440b56c9c8f81e2e7eff0bfa","generated":"2026-05-05T00:00:00Z"} -->
