@@ -21,7 +21,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期，并可选择输出 GitHub Actions error annotations。
-- 生成 GitHub Actions workflow，用于在定时任务和 pull request 中运行过期译文检查。
+- 生成 GitHub Actions 或 GitLab CI 模板，用于在定时任务以及 pull request 或 merge request 中运行过期译文检查。
 - 插入或自动管理用于多语言 README 导航的顶部语言切换器。
 
 ## 安装
@@ -138,16 +138,23 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
-生成用于定时任务和 pull request 过期译文检查的 GitHub Actions workflow：
+生成用于定时任务和 pull request 过期译文检查的 GitHub Actions workflow。GitHub Actions 是默认平台：
 
 ```sh
 go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
 ```
 
-当 README 路径或 Go 设置不同时，可以自定义生成的 workflow：
+生成用于 merge request 和定时任务过期译文检查的 GitLab CI job 模板：
+
+```sh
+go run ./cmd/readme-lingo workflow --platform gitlab --targets zh,ja > .gitlab-ci.yml
+```
+
+当 README 路径、Go 设置或 workflow/job 名称不同时，可以自定义生成的 CI 模板：
 
 ```sh
 go run ./cmd/readme-lingo workflow \
+  --platform github \
   --source docs/README.md \
   --targets zh,ja \
   --output-dir docs \
@@ -176,7 +183,7 @@ go run ./cmd/readme-lingo translate \
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划
 - 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
-- 用于定时过期译文检查的 GitHub Actions workflow 模板生成
+- 用于定时过期译文检查的 GitHub Actions 和 GitLab CI 模板生成
 
 `cmd/readme-lingo` 中的 CLI 有意保持精简，把行为委托给包实现。
 
@@ -195,7 +202,7 @@ test -z "$(gofmt -l .)"
 ## 路线图
 
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
-- GitHub Actions 之外的其他 CI workflow 模板
+- 生成的 CI 模板支持可配置的 schedule 和分支过滤
 
 ## AI 辅助维护
 
@@ -205,4 +212,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:450f3e41f10f41f174bcf014fdbf6d67042fe4a106f370638f52a55da0ce0a8d","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:93e9929488b28b72320ac7f290a0cf666cecb5dd249414213fdcdb07d5b6a8b8","generated":"2026-05-05T00:00:00Z"} -->

@@ -21,7 +21,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API, with optional GitHub Actions error annotations.
-- Generate a GitHub Actions workflow that runs scheduled and pull request stale-translation checks.
+- Generate GitHub Actions or GitLab CI templates that run scheduled and pull request or merge request stale-translation checks.
 - Insert or automatically manage a top language switcher for multilingual README navigation.
 
 ## Installation
@@ -138,16 +138,23 @@ Emit GitHub Actions error annotations for missing or stale translations during c
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
-Generate a GitHub Actions workflow for scheduled and pull request stale-translation checks:
+Generate a GitHub Actions workflow for scheduled and pull request stale-translation checks. GitHub Actions is the default platform:
 
 ```sh
 go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
 ```
 
-Customize the generated workflow when your README or Go setup differs:
+Generate a GitLab CI job template for merge request and scheduled stale-translation checks:
+
+```sh
+go run ./cmd/readme-lingo workflow --platform gitlab --targets zh,ja > .gitlab-ci.yml
+```
+
+Customize the generated CI template when your README, Go setup, or workflow/job name differs:
 
 ```sh
 go run ./cmd/readme-lingo workflow \
+  --platform github \
   --source docs/README.md \
   --targets zh,ja \
   --output-dir docs \
@@ -176,7 +183,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
 - dry-run and check workflows for scriptable automation, including GitHub Actions annotations
-- GitHub Actions workflow template generation for scheduled stale-translation checks
+- GitHub Actions and GitLab CI template generation for scheduled stale-translation checks
 
 The CLI in `cmd/readme-lingo` is intentionally thin and delegates behavior to the package.
 
@@ -195,7 +202,7 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 ## Roadmap
 
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
-- Additional CI workflow templates beyond GitHub Actions
+- Configurable schedules and branch filters in generated CI templates
 
 ## AI-Assisted Maintenance
 

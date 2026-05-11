@@ -242,6 +242,48 @@ func TestWorkflowRequiresTargetsFlag(t *testing.T) {
 	}
 }
 
+func TestWorkflowSupportsGitLabPlatform(t *testing.T) {
+	output, err := captureStdout(t, func() error {
+		return run([]string{
+			"workflow",
+			"--platform", "gitlab",
+			"--targets", "zh,ja",
+			"--name", "Docs translation check",
+			"--go-version", "1.24.3",
+		})
+	})
+	if err != nil {
+		t.Fatalf("workflow returned error: %v", err)
+	}
+
+	want := `Docs translation check:
+  image: golang:1.24.3
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+    - readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
+`
+	if output != want {
+		t.Fatalf("workflow mismatch\nwant:\n%s\ngot:\n%s", want, output)
+	}
+}
+
+func TestWorkflowRejectsInvalidPlatform(t *testing.T) {
+	err := run([]string{
+		"workflow",
+		"--platform", "circle",
+		"--targets", "zh",
+	})
+	if err == nil {
+		t.Fatal("expected invalid platform error")
+	}
+	if err.Error() != `invalid workflow platform "circle": use github or gitlab` {
+		t.Fatalf("error = %q", err)
+	}
+}
+
 func captureStdout(t *testing.T, fn func() error) (string, error) {
 	t.Helper()
 	original := os.Stdout

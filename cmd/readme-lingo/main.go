@@ -41,8 +41,9 @@ func runWorkflow(args []string) error {
 	source := fs.String("source", lingo.DefaultWorkflowSource, "source Markdown file")
 	targetsValue := fs.String("targets", "", "comma-separated target language tags or names")
 	outputDir := fs.String("output-dir", lingo.DefaultWorkflowOutputDir, "output directory for default target filenames")
-	goVersion := fs.String("go-version", lingo.DefaultWorkflowGoVersion, "Go version for actions/setup-go")
-	name := fs.String("name", lingo.DefaultWorkflowName, "GitHub Actions workflow name")
+	goVersion := fs.String("go-version", lingo.DefaultWorkflowGoVersion, "Go version for generated CI setup")
+	name := fs.String("name", lingo.DefaultWorkflowName, "workflow name for GitHub Actions or job name for GitLab CI")
+	platform := fs.String("platform", lingo.DefaultWorkflowPlatform, "workflow platform: github or gitlab")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -55,6 +56,7 @@ func runWorkflow(args []string) error {
 	}
 	workflow, err := lingo.RenderWorkflow(lingo.WorkflowOptions{
 		Name:      *name,
+		Platform:  *platform,
 		Source:    *source,
 		Targets:   targets,
 		OutputDir: *outputDir,
@@ -192,4 +194,5 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --target zh --output README-zh.md")
 	fmt.Fprintln(os.Stderr, "  readme-lingo translate --source README.md --targets zh,ja,fr --output-dir .")
 	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --targets zh,ja")
+	fmt.Fprintln(os.Stderr, "  readme-lingo workflow --platform gitlab --targets zh,ja")
 }
