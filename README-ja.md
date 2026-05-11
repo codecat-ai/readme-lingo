@@ -159,8 +159,12 @@ go run ./cmd/readme-lingo workflow \
   --targets zh,ja \
   --output-dir docs \
   --go-version 1.22.x \
-  --name "Docs translation check"
+  --name "Docs translation check" \
+  --schedule "30 2 * * 1" \
+  --branches main,release
 ```
+
+`--schedule` は GitHub Actions の cron をデフォルトの `0 0 * * 1` から指定値へ変更します。GitLab CI では pipeline schedule が job YAML ではなく GitLab 側で設定されるため、生成 YAML に注意コメントを含めます。`--branches` は GitHub に pull request ブランチフィルターを追加し、GitLab にはブランチ対応 rules を追加します。GitHub のスケジュール workflow は引き続きデフォルトブランチで実行されるため、生成される job にはスケジュールチェック用の `if:` guard が入ります。
 
 ソース README と生成ファイルの上部言語スイッチャーを自動管理:
 
@@ -183,7 +187,7 @@ go run ./cmd/readme-lingo translate \
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
 - スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
-- スケジュールされた古い翻訳チェック向けの GitHub Actions と GitLab CI テンプレート生成
+- 任意のブランチフィルターに対応した、スケジュール済み古い翻訳チェック向けの GitHub Actions と GitLab CI テンプレート生成
 
 `cmd/readme-lingo` の CLI は意図的に薄くし、挙動をパッケージに委譲しています。
 
@@ -202,7 +206,8 @@ test -z "$(gofmt -l .)"
 ## ロードマップ
 
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
-- 生成される CI テンプレートでの schedule とブランチフィルターの設定
+- ダウンロード用バイナリの first-class release artifacts と checksums
+- 翻訳 README バリアント向けの設定可能な出力命名パターン
 
 ## AI 支援メンテナンス
 
@@ -212,4 +217,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:93e9929488b28b72320ac7f290a0cf666cecb5dd249414213fdcdb07d5b6a8b8","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:69531542c29124f3f6759fb6c0e5ff823417fa5b440b56c9c8f81e2e7eff0bfa","generated":"2026-05-05T00:00:00Z"} -->

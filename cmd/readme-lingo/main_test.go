@@ -270,6 +270,49 @@ func TestWorkflowSupportsGitLabPlatform(t *testing.T) {
 	}
 }
 
+func TestWorkflowSupportsScheduleAndBranchesFlags(t *testing.T) {
+	output, err := captureStdout(t, func() error {
+		return run([]string{
+			"workflow",
+			"--targets", "zh,ja",
+			"--schedule", "15 4 * * 2",
+			"--branches", "main, release, ,",
+		})
+	})
+	if err != nil {
+		t.Fatalf("workflow returned error: %v", err)
+	}
+
+	want := `name: readme-lingo stale translations
+
+on:
+  pull_request:
+    branches:
+      - main
+      - release
+  schedule:
+    # Scheduled workflows run on the default branch; this job guard limits scheduled checks.
+    - cron: "15 4 * * 2"
+
+jobs:
+  readme-lingo:
+    if: github.event_name != 'schedule' || github.ref_name == 'main' || github.ref_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.3"
+      - name: Install readme-lingo
+        run: go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+      - name: Check README translations
+        run: readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
+`
+	if output != want {
+		t.Fatalf("workflow mismatch\nwant:\n%s\ngot:\n%s", want, output)
+	}
+}
+
 func TestWorkflowRejectsInvalidPlatform(t *testing.T) {
 	err := run([]string{
 		"workflow",

@@ -159,8 +159,12 @@ go run ./cmd/readme-lingo workflow \
   --targets zh,ja \
   --output-dir docs \
   --go-version 1.22.x \
-  --name "Docs translation check"
+  --name "Docs translation check" \
+  --schedule "30 2 * * 1" \
+  --branches main,release
 ```
+
+`--schedule` changes the GitHub Actions cron entry from the default `0 0 * * 1`. For GitLab CI, generated YAML includes a reminder comment because pipeline schedules are configured in GitLab, not in the job. `--branches` adds pull request branch filters for GitHub and branch-aware rules for GitLab; GitHub scheduled workflows still run on the default branch, so the generated job includes an `if:` guard for scheduled checks.
 
 Automatically manage the top language switcher in the source and generated README files:
 
@@ -183,7 +187,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs
 - dry-run and check workflows for scriptable automation, including GitHub Actions annotations
-- GitHub Actions and GitLab CI template generation for scheduled stale-translation checks
+- GitHub Actions and GitLab CI template generation for scheduled stale-translation checks with optional branch filters
 
 The CLI in `cmd/readme-lingo` is intentionally thin and delegates behavior to the package.
 
@@ -202,7 +206,8 @@ Unit tests use fake HTTP transports and temporary files. They do not call real A
 ## Roadmap
 
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
-- Configurable schedules and branch filters in generated CI templates
+- First-class release artifacts and checksums for downloaded binaries
+- Configurable output naming patterns for translated README variants
 
 ## AI-Assisted Maintenance
 
