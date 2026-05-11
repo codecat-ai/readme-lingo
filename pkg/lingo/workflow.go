@@ -8,6 +8,8 @@ import (
 
 const (
 	DefaultWorkflowName      = "readme-lingo stale translations"
+	DefaultWorkflowPlatform  = "github"
+	DefaultGitLabJobName     = "readme_lingo"
 	DefaultWorkflowSource    = "README.md"
 	DefaultWorkflowOutputDir = "."
 	DefaultWorkflowGoVersion = "1.24.3"
@@ -15,6 +17,7 @@ const (
 
 type WorkflowOptions struct {
 	Name      string
+	Platform  string
 	Source    string
 	Targets   []string
 	OutputDir string
@@ -22,6 +25,10 @@ type WorkflowOptions struct {
 }
 
 func RenderWorkflow(options WorkflowOptions) (string, error) {
+	platform := strings.TrimSpace(options.Platform)
+	if platform == "" {
+		platform = DefaultWorkflowPlatform
+	}
 	name := strings.TrimSpace(options.Name)
 	if name == "" {
 		name = DefaultWorkflowName
@@ -43,13 +50,21 @@ func RenderWorkflow(options WorkflowOptions) (string, error) {
 		return "", err
 	}
 
-	command := fmt.Sprintf(
-		"readme-lingo translate --source %s --targets %s --output-dir %s --check --github-annotations",
-		shellArg(source),
-		shellArg(strings.Join(targets, ",")),
-		shellArg(outputDir),
-	)
+	switch platform {
+	case "github":
+		return renderGitHubWorkflow(name, source, targets, outputDir, goVersion), nil
+	case "gitlab":
+		if name == DefaultWorkflowName {
+			name = DefaultGitLabJobName
+		}
+		return renderGitLabWorkflow(name, source, targets, outputDir, goVersion), nil
+	default:
+		return "", fmt.Errorf("invalid workflow platform %q: use github or gitlab", platform)
+	}
+}
 
+func renderGitHubWorkflow(name string, source string, targets []string, outputDir string, goVersion string) string {
+	command := workflowCheckCommand(source, targets, outputDir, true)
 	var b strings.Builder
 	fmt.Fprintf(&b, "name: %s\n\n", yamlScalar(name))
 	b.WriteString("on:\n")
@@ -68,7 +83,34 @@ func RenderWorkflow(options WorkflowOptions) (string, error) {
 	b.WriteString("        run: go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest\n")
 	b.WriteString("      - name: Check README translations\n")
 	fmt.Fprintf(&b, "        run: %s\n", command)
-	return b.String(), nil
+	return b.String()
+}
+
+func renderGitLabWorkflow(name string, source string, targets []string, outputDir string, goVersion string) string {
+	command := workflowCheckCommand(source, targets, outputDir, false)
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s:\n", yamlScalar(name))
+	fmt.Fprintf(&b, "  image: golang:%s\n", goVersion)
+	b.WriteString("  rules:\n")
+	b.WriteString("    - if: '$CI_PIPELINE_SOURCE == \"merge_request_event\"'\n")
+	b.WriteString("    - if: '$CI_PIPELINE_SOURCE == \"schedule\"'\n")
+	b.WriteString("  script:\n")
+	b.WriteString("    - go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest\n")
+	fmt.Fprintf(&b, "    - %s\n", command)
+	return b.String()
+}
+
+func workflowCheckCommand(source string, targets []string, outputDir string, githubAnnotations bool) string {
+	command := fmt.Sprintf(
+		"readme-lingo translate --source %s --targets %s --output-dir %s --check",
+		shellArg(source),
+		shellArg(strings.Join(targets, ",")),
+		shellArg(outputDir),
+	)
+	if githubAnnotations {
+		command += " --github-annotations"
+	}
+	return command
 }
 
 func normalizeWorkflowTargets(targets []string) ([]string, error) {

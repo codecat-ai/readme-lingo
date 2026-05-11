@@ -71,3 +71,42 @@ jobs:
 		t.Fatalf("workflow mismatch\nwant:\n%s\ngot:\n%s", want, got)
 	}
 }
+
+func TestRenderWorkflowUsesGitLabPlatform(t *testing.T) {
+	got, err := RenderWorkflow(WorkflowOptions{
+		Platform:  "gitlab",
+		Source:    "docs/README guide.md",
+		Targets:   []string{"zh", "ja"},
+		OutputDir: "docs/translations",
+		GoVersion: "1.24.3",
+	})
+	if err != nil {
+		t.Fatalf("RenderWorkflow returned error: %v", err)
+	}
+
+	want := `readme_lingo:
+  image: golang:1.24.3
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+  script:
+    - go install github.com/codecat-ai/readme-lingo/cmd/readme-lingo@latest
+    - readme-lingo translate --source 'docs/README guide.md' --targets zh,ja --output-dir docs/translations --check
+`
+	if got != want {
+		t.Fatalf("workflow mismatch\nwant:\n%s\ngot:\n%s", want, got)
+	}
+}
+
+func TestRenderWorkflowRejectsInvalidPlatform(t *testing.T) {
+	_, err := RenderWorkflow(WorkflowOptions{
+		Platform: "circle",
+		Targets:  []string{"zh"},
+	})
+	if err == nil {
+		t.Fatal("expected invalid platform error")
+	}
+	if err.Error() != `invalid workflow platform "circle": use github or gitlab` {
+		t.Fatalf("error = %q", err)
+	}
+}

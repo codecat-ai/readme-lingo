@@ -21,7 +21,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認し、必要に応じて GitHub Actions error annotations を出力します。
-- スケジュール実行と pull request で古い翻訳をチェックする GitHub Actions workflow を生成します。
+- スケジュール実行と pull request または merge request で古い翻訳をチェックする GitHub Actions または GitLab CI テンプレートを生成します。
 - 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
 
 ## インストール
@@ -138,16 +138,23 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --github-annotations
 ```
 
-スケジュール実行と pull request で古い翻訳をチェックする GitHub Actions workflow を生成:
+スケジュール実行と pull request で古い翻訳をチェックする GitHub Actions workflow を生成します。デフォルトの platform は GitHub Actions です。
 
 ```sh
 go run ./cmd/readme-lingo workflow --targets zh,ja > .github/workflows/readme-lingo.yml
 ```
 
-README の場所や Go の設定が異なる場合は、生成される workflow をカスタマイズできます。
+merge request とスケジュール実行で古い翻訳をチェックする GitLab CI job テンプレートを生成します。
+
+```sh
+go run ./cmd/readme-lingo workflow --platform gitlab --targets zh,ja > .gitlab-ci.yml
+```
+
+README の場所、Go の設定、workflow/job 名が異なる場合は、生成される CI テンプレートをカスタマイズできます。
 
 ```sh
 go run ./cmd/readme-lingo workflow \
+  --platform github \
   --source docs/README.md \
   --targets zh,ja \
   --output-dir docs \
@@ -176,7 +183,7 @@ go run ./cmd/readme-lingo translate \
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画
 - スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
-- スケジュールされた古い翻訳チェック向けの GitHub Actions workflow テンプレート生成
+- スケジュールされた古い翻訳チェック向けの GitHub Actions と GitLab CI テンプレート生成
 
 `cmd/readme-lingo` の CLI は意図的に薄くし、挙動をパッケージに委譲しています。
 
@@ -195,7 +202,7 @@ test -z "$(gofmt -l .)"
 ## ロードマップ
 
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
-- GitHub Actions 以外の CI workflow テンプレート
+- 生成される CI テンプレートでの schedule とブランチフィルターの設定
 
 ## AI 支援メンテナンス
 
@@ -205,4 +212,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:450f3e41f10f41f174bcf014fdbf6d67042fe4a106f370638f52a55da0ce0a8d","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:93e9929488b28b72320ac7f290a0cf666cecb5dd249414213fdcdb07d5b6a8b8","generated":"2026-05-05T00:00:00Z"} -->
