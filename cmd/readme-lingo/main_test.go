@@ -232,6 +232,41 @@ func TestTranslateGitHubAnnotationsFlagHasNoEffectWithoutCheck(t *testing.T) {
 	}
 }
 
+func TestTranslateDryRunAcceptsOutputPattern(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "docs", "README.md")
+	if err := os.MkdirAll(filepath.Dir(source), 0o755); err != nil {
+		t.Fatalf("make docs dir: %v", err)
+	}
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	outputDir := filepath.Join(dir, "docs", "i18n")
+
+	output, err := captureStdout(t, func() error {
+		return run([]string{
+			"translate",
+			"--source", source,
+			"--targets", "zh,ja",
+			"--output-dir", outputDir,
+			"--output-pattern", "{sourceBase}.{target}{sourceExt}",
+			"--dry-run",
+		})
+	})
+	if err != nil {
+		t.Fatalf("dry-run with output pattern: %v", err)
+	}
+
+	for _, want := range []string{
+		filepath.Join(outputDir, "README.zh.md"),
+		filepath.Join(outputDir, "README.ja.md"),
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("output missing planned path %q:\n%s", want, output)
+		}
+	}
+}
+
 func TestWorkflowRequiresTargetsFlag(t *testing.T) {
 	err := run([]string{"workflow"})
 	if err == nil {

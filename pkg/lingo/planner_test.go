@@ -39,6 +39,45 @@ func TestPlanOutputsMultipleTargetsUseOutputDirAndDefaultNames(t *testing.T) {
 	}
 }
 
+func TestPlanOutputsWithPatternUsesSourcePlaceholders(t *testing.T) {
+	plans, err := PlanOutputsWithPattern("docs/guide.en.md", []string{"zh", "ja"}, "", "docs/i18n", "{sourceBase}.{target}{sourceExt}")
+	if err != nil {
+		t.Fatalf("PlanOutputsWithPattern returned error: %v", err)
+	}
+	want := []string{
+		filepath.Clean("docs/i18n/guide.en.zh.md"),
+		filepath.Clean("docs/i18n/guide.en.ja.md"),
+	}
+	for i := range want {
+		if plans[i].OutputPath != want[i] {
+			t.Fatalf("plan %d output = %q, want %q", i, plans[i].OutputPath, want[i])
+		}
+	}
+}
+
+func TestPlanOutputsWithPatternRejectsInvalidPatterns(t *testing.T) {
+	tests := []struct {
+		name    string
+		pattern string
+		want    string
+	}{
+		{name: "empty", pattern: "", want: "empty"},
+		{name: "missing target", pattern: "{sourceBase}{sourceExt}", want: "{target}"},
+		{name: "unsafe generated name", pattern: "{target}/README.md", want: "target \"zh\""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := PlanOutputsWithPattern("README.md", []string{"zh"}, "", "translations", tt.pattern)
+			if err == nil {
+				t.Fatal("expected pattern error")
+			}
+			if !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("error = %q, want it to contain %q", err, tt.want)
+			}
+		})
+	}
+}
+
 func TestPlanOutputsRejectsSingleOutputForMultipleTargets(t *testing.T) {
 	_, err := PlanOutputs("README.md", []string{"zh", "ja"}, "README-translated.md", "")
 	if err == nil {

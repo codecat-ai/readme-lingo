@@ -36,6 +36,20 @@ func SplitTargets(value string) ([]string, error) {
 }
 
 func PlanOutputs(source string, targets []string, output string, outputDir string) ([]OutputPlan, error) {
+	return planOutputs(source, targets, output, outputDir, "")
+}
+
+func PlanOutputsWithPattern(source string, targets []string, output string, outputDir string, pattern string) ([]OutputPlan, error) {
+	if strings.TrimSpace(pattern) == "" {
+		return nil, errors.New("output pattern cannot be empty")
+	}
+	if !strings.Contains(pattern, "{target}") {
+		return nil, errors.New("output pattern must include {target}")
+	}
+	return planOutputs(source, targets, output, outputDir, pattern)
+}
+
+func planOutputs(source string, targets []string, output string, outputDir string, pattern string) ([]OutputPlan, error) {
 	if strings.TrimSpace(source) == "" {
 		return nil, errors.New("source path is required")
 	}
@@ -55,7 +69,13 @@ func PlanOutputs(source string, targets []string, output string, outputDir strin
 		}
 		outputPath := filepath.Clean(output)
 		if outputPath == "." || outputPath == "" {
-			outputPath = defaultOutputPath(source, target, outputDir)
+			plannedPath, err := defaultOutputPath(source, target, outputDir, pattern)
+			if err != nil {
+				return nil, err
+			}
+			outputPath = plannedPath
+		} else if pattern != "" {
+			return nil, errors.New("--output-pattern cannot be used with --output")
 		}
 		plans = append(plans, OutputPlan{
 			SourcePath: source,
@@ -66,7 +86,7 @@ func PlanOutputs(source string, targets []string, output string, outputDir strin
 	return plans, nil
 }
 
-func defaultOutputPath(source string, target string, outputDir string) string {
+func defaultOutputPath(source string, target string, outputDir string, pattern string) (string, error) {
 	dir := filepath.Dir(source)
 	if outputDir != "" {
 		dir = outputDir
@@ -74,10 +94,24 @@ func defaultOutputPath(source string, target string, outputDir string) string {
 	base := filepath.Base(source)
 	ext := filepath.Ext(base)
 	stem := strings.TrimSuffix(base, ext)
+	if pattern != "" {
+		name := applyOutputPattern(pattern, target, stem, ext)
+		if strings.ContainsAny(name, `/\`) {
+			return "", fmt.Errorf("output pattern generated unsafe filename %q for target %q", name, target)
+		}
+		return filepath.Clean(filepath.Join(dir, name)), nil
+	}
 	if ext == "" {
 		ext = ".md"
 	}
-	return filepath.Clean(filepath.Join(dir, fmt.Sprintf("%s-%s%s", stem, slugTarget(target), ext)))
+	return filepath.Clean(filepath.Join(dir, fmt.Sprintf("%s-%s%s", stem, slugTarget(target), ext))), nil
+}
+
+func applyOutputPattern(pattern string, target string, sourceBase string, sourceExt string) string {
+	name := strings.ReplaceAll(pattern, "{target}", target)
+	name = strings.ReplaceAll(name, "{sourceBase}", sourceBase)
+	name = strings.ReplaceAll(name, "{sourceExt}", sourceExt)
+	return name
 }
 
 func slugTarget(target string) string {
