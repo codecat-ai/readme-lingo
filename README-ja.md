@@ -15,7 +15,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 ## 機能
 
 - 1 つの README または Markdown ファイルを任意の言語タグや言語名に翻訳します。
-- 複数ターゲットを 1 つのコマンドで翻訳し、予測しやすい `README-<target>.md` 出力を生成します。
+- 複数ターゲットを 1 つのコマンドで翻訳し、予測しやすい `README-<target>.md` 出力を生成します。リポジトリ固有のレイアウト向けに安全なファイル名パターンも選べます。
 - コードフェンス、リンク、表、front matter、HTML コメントを保つようモデルに指示し、Markdown 構造をできるだけ維持します。
 - 大きな Markdown ソースを見出し単位のチャンクに分けることで、各翻訳リクエストを小さく保ちながら、出力順と 1 つのメタデータ footer を維持できます。
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
@@ -104,6 +104,18 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --outp
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+複数ターゲットのレイアウトには、カスタム出力ファイル名パターンを使えます。
+
+```sh
+go run ./cmd/readme-lingo translate \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs/i18n \
+  --output-pattern "{sourceBase}.{target}{sourceExt}"
+```
+
+パターンでは `{target}`、`{sourceBase}`、`{sourceExt}` を使えます。この例では `docs/i18n/README.zh.md` と `docs/i18n/README.ja.md` を計画します。パターンには `{target}` が必須で、生成されるファイル名にパス区切り文字を含めることはできません。
+
 実際に翻訳するときに、プロジェクト用語のガイダンスとして用語集ファイルを使います。
 
 ```sh
@@ -185,7 +197,7 @@ go run ./cmd/readme-lingo translate \
 - 大きな Markdown 翻訳リクエスト向けの見出し単位チャンク計画
 - 用語ガイダンスのための任意の用語集伝播
 - ソース digest メタデータの生成と同期チェック
-- 単一ターゲットおよび複数ターゲット実行の出力計画
+- 単一ターゲットおよび複数ターゲット実行の出力計画。安全な設定可能命名パターンも含みます
 - スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
 - 任意のブランチフィルターに対応した、スケジュール済み古い翻訳チェック向けの GitHub Actions と GitLab CI テンプレート生成
 
@@ -201,13 +213,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要で、用語集ファイルを読まない `--check --github-annotations` もカバーします。
+ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要で、出力命名パターンと、用語集ファイルを読まない `--check --github-annotations` もカバーします。
 
 ## ロードマップ
 
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - ダウンロード用バイナリの first-class release artifacts と checksums
-- 翻訳 README バリアント向けの設定可能な出力命名パターン
+- CI 連携向けの機械可読 JSON plan 出力
 
 ## AI 支援メンテナンス
 
@@ -217,4 +229,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:69531542c29124f3f6759fb6c0e5ff823417fa5b440b56c9c8f81e2e7eff0bfa","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:4b58ff671674d6d2729c6947842eb30369579317221d89438970ffc6a4df7086","generated":"2026-05-05T00:00:00Z"} -->

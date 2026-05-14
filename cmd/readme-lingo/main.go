@@ -93,6 +93,7 @@ func runTranslate(args []string) error {
 	targetsValue := fs.String("targets", "", "comma-separated target language tags or names")
 	output := fs.String("output", "", "output file for a single target")
 	outputDir := fs.String("output-dir", "", "output directory for default target filenames")
+	outputPattern := fs.String("output-pattern", "", "filename pattern for multi-target outputs; supports {target}, {sourceBase}, and {sourceExt}")
 	glossary := fs.String("glossary", "", "UTF-8 text or Markdown file with project terminology guidance")
 	dryRun := fs.Bool("dry-run", false, "validate inputs and print planned outputs without calling the API")
 	check := fs.Bool("check", false, "verify translated files exist and match the source digest")
@@ -107,6 +108,10 @@ func runTranslate(args []string) error {
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
+	outputPatternSet := flagWasProvided(fs, "output-pattern")
+	if outputPatternSet && strings.TrimSpace(*outputPattern) == "" {
+		return errors.New("--output-pattern cannot be empty")
+	}
 
 	targets, err := collectTargets(*target, *targetsValue)
 	if err != nil {
@@ -117,10 +122,11 @@ func runTranslate(args []string) error {
 	}
 	if *check {
 		result, err := lingo.RunCheck(lingo.CheckOptions{
-			SourcePath: *source,
-			Targets:    targets,
-			OutputPath: *output,
-			OutputDir:  *outputDir,
+			SourcePath:    *source,
+			Targets:       targets,
+			OutputPath:    *output,
+			OutputDir:     *outputDir,
+			OutputPattern: selectedOutputPattern(*outputPattern, outputPatternSet),
 		})
 		for _, plan := range result.Missing {
 			fmt.Fprintf(os.Stdout, "missing: %s\n", plan.OutputPath)
@@ -154,6 +160,7 @@ func runTranslate(args []string) error {
 		Targets:       targets,
 		OutputPath:    *output,
 		OutputDir:     *outputDir,
+		OutputPattern: selectedOutputPattern(*outputPattern, outputPatternSet),
 		GlossaryPath:  *glossary,
 		DryRun:        *dryRun,
 		ChunkHeadings: *chunkHeadings,
@@ -163,6 +170,23 @@ func runTranslate(args []string) error {
 		Model:         *model,
 	}, client, os.Stdout)
 	return err
+}
+
+func flagWasProvided(fs *flag.FlagSet, name string) bool {
+	found := false
+	fs.Visit(func(flag *flag.Flag) {
+		if flag.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
+func selectedOutputPattern(pattern string, wasProvided bool) string {
+	if !wasProvided {
+		return ""
+	}
+	return pattern
 }
 
 func printGitHubAnnotation(plan lingo.OutputPlan, title string, message string) {

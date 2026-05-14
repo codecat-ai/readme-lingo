@@ -15,7 +15,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 ## 功能
 
 - 将一个 README 或 Markdown 文件翻译为任意目标语言标签或语言名称。
-- 用一个命令翻译多个目标，并生成可预测的 `README-<target>.md` 输出。
+- 用一个命令翻译多个目标，并生成可预测的 `README-<target>.md` 输出；也可以为仓库特定布局选择安全的文件名模式。
 - 通过提示模型保留代码块、链接、表格、front matter 和 HTML 注释，尽量保持 Markdown 结构。
 - 可选地把大型 Markdown 源文件按标题感知地分块，让每次翻译请求更小，同时保留输出顺序并只写入一个元数据 footer。
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
@@ -104,6 +104,18 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja,fr --outp
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+为多目标布局使用自定义输出文件名模式：
+
+```sh
+go run ./cmd/readme-lingo translate \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs/i18n \
+  --output-pattern "{sourceBase}.{target}{sourceExt}"
+```
+
+该模式支持 `{target}`、`{sourceBase}` 和 `{sourceExt}`。上面的示例会计划输出 `docs/i18n/README.zh.md` 和 `docs/i18n/README.ja.md`。模式必须包含 `{target}`，生成的文件名不能包含路径分隔符。
+
 在真实翻译时使用术语表文件提供项目术语指导：
 
 ```sh
@@ -185,7 +197,7 @@ go run ./cmd/readme-lingo translate \
 - 面向大型 Markdown 翻译请求的标题感知分块规划
 - 用于术语指导的可选术语表传递
 - 源文件摘要元数据生成和同步检查
-- 单目标和多目标运行的输出规划
+- 单目标和多目标运行的输出规划，包括安全的可配置命名模式
 - 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
 - 用于定时过期译文检查的 GitHub Actions 和 GitLab CI 模板生成，并支持可选分支过滤
 
@@ -201,13 +213,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key，并覆盖不会读取术语表文件的 `--check --github-annotations`。
+单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key，并覆盖输出命名模式以及不会读取术语表文件的 `--check --github-annotations`。
 
 ## 路线图
 
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - 用于下载二进制文件的一等 release artifacts 和 checksums
-- 可配置的译文 README 变体输出命名模式
+- 用于 CI 集成的机器可读 JSON 计划输出
 
 ## AI 辅助维护
 
@@ -217,4 +229,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:69531542c29124f3f6759fb6c0e5ff823417fa5b440b56c9c8f81e2e7eff0bfa","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:4b58ff671674d6d2729c6947842eb30369579317221d89438970ffc6a4df7086","generated":"2026-05-05T00:00:00Z"} -->

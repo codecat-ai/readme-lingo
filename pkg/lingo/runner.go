@@ -16,6 +16,7 @@ type TranslateOptions struct {
 	Targets       []string
 	OutputPath    string
 	OutputDir     string
+	OutputPattern string
 	GlossaryPath  string
 	DryRun        bool
 	ChunkHeadings bool
@@ -31,7 +32,7 @@ type TranslateResult struct {
 }
 
 func RunTranslate(ctx context.Context, opts TranslateOptions, translator Translator, log io.Writer) (TranslateResult, error) {
-	plans, err := PlanOutputs(opts.SourcePath, opts.Targets, opts.OutputPath, opts.OutputDir)
+	plans, err := planTranslateOutputs(opts.SourcePath, opts.Targets, opts.OutputPath, opts.OutputDir, opts.OutputPattern)
 	if err != nil {
 		return TranslateResult{}, err
 	}
@@ -145,10 +146,11 @@ func translateMarkdown(ctx context.Context, translator Translator, req Translate
 }
 
 type CheckOptions struct {
-	SourcePath string
-	Targets    []string
-	OutputPath string
-	OutputDir  string
+	SourcePath    string
+	Targets       []string
+	OutputPath    string
+	OutputDir     string
+	OutputPattern string
 }
 
 type CheckResult struct {
@@ -158,7 +160,7 @@ type CheckResult struct {
 }
 
 func RunCheck(opts CheckOptions) (CheckResult, error) {
-	plans, err := PlanOutputs(opts.SourcePath, opts.Targets, opts.OutputPath, opts.OutputDir)
+	plans, err := planTranslateOutputs(opts.SourcePath, opts.Targets, opts.OutputPath, opts.OutputDir, opts.OutputPattern)
 	if err != nil {
 		return CheckResult{}, err
 	}
@@ -184,6 +186,13 @@ func RunCheck(opts CheckOptions) (CheckResult, error) {
 		return result, errors.New("translations are missing or stale")
 	}
 	return result, nil
+}
+
+func planTranslateOutputs(source string, targets []string, output string, outputDir string, outputPattern string) ([]OutputPlan, error) {
+	if outputPattern != "" {
+		return PlanOutputsWithPattern(source, targets, output, outputDir, outputPattern)
+	}
+	return PlanOutputs(source, targets, output, outputDir)
 }
 
 func logOrDiscard(w io.Writer) io.Writer {

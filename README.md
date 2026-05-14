@@ -15,7 +15,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 ## Features
 
 - Translate one README or Markdown file into any target language tag or language name.
-- Translate multiple targets in one command with predictable `README-<target>.md` outputs.
+- Translate multiple targets in one command with predictable `README-<target>.md` outputs, or choose a safe filename pattern for repository-specific layouts.
 - Preserve Markdown-oriented structure by prompting the model to keep code fences, links, tables, front matter, and HTML comments intact.
 - Optionally split large Markdown sources into heading-aware chunks so each translation request stays smaller while output order and one metadata footer are preserved.
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
@@ -104,6 +104,18 @@ The default output name is `README-<target>.md`. Japanese uses the standard `ja`
 go run ./cmd/readme-lingo translate --source README.md --target ja --output README-ja.md
 ```
 
+Use a custom output filename pattern for multi-target layouts:
+
+```sh
+go run ./cmd/readme-lingo translate \
+  --source docs/README.md \
+  --targets zh,ja \
+  --output-dir docs/i18n \
+  --output-pattern "{sourceBase}.{target}{sourceExt}"
+```
+
+The pattern supports `{target}`, `{sourceBase}`, and `{sourceExt}`. The example plans `docs/i18n/README.zh.md` and `docs/i18n/README.ja.md`. Patterns must include `{target}`, and generated filenames cannot contain path separators.
+
 Use a glossary file for project terminology guidance during real translations:
 
 ```sh
@@ -185,7 +197,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - heading-aware chunk planning for large Markdown translation requests
 - optional glossary propagation for terminology guidance
 - source digest metadata generation and synchronization checks
-- output planning for single-target and multi-target runs
+- output planning for single-target and multi-target runs, including safe configurable naming patterns
 - dry-run and check workflows for scriptable automation, including GitHub Actions annotations
 - GitHub Actions and GitLab CI template generation for scheduled stale-translation checks with optional branch filters
 
@@ -201,13 +213,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-Unit tests use fake HTTP transports and temporary files. They do not call real APIs, do not require API keys, and cover `--check --github-annotations` without reading glossary files.
+Unit tests use fake HTTP transports and temporary files. They do not call real APIs, do not require API keys, and cover output naming patterns and `--check --github-annotations` without reading glossary files.
 
 ## Roadmap
 
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - First-class release artifacts and checksums for downloaded binaries
-- Configurable output naming patterns for translated README variants
+- Machine-readable JSON plan output for CI integrations
 
 ## AI-Assisted Maintenance
 
