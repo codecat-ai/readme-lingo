@@ -21,6 +21,7 @@ Maintainers often update `README.md` first and then forget that translated READM
 - Include optional glossary guidance in translation prompts so project terminology stays consistent.
 - Add hidden metadata with the source digest, source path, target, model, and generation time.
 - Check whether generated translations are missing or stale without calling the API, with optional GitHub Actions error annotations.
+- Emit machine-readable JSON for dry-run planning and check summaries so CI jobs can parse expected, missing, and stale outputs.
 - Generate GitHub Actions or GitLab CI templates that run scheduled and pull request or merge request stale-translation checks.
 - Insert or automatically manage a top language switcher for multilingual README navigation.
 
@@ -138,11 +139,31 @@ Show planned outputs without calling the API:
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run
 ```
 
+Emit the same plan as JSON for automation:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run --json
+```
+
+Example output:
+
+```json
+{"plans":[{"source":"README.md","target":"zh","output":"README-zh.md"},{"source":"README.md","target":"ja","output":"README-ja.md"}]}
+```
+
 Check whether expected translations exist and match the current source digest:
 
 ```sh
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
+
+Emit check results as JSON. The command still exits non-zero when any output is missing or stale:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --json
+```
+
+JSON check output includes `plans`, `missing`, and `stale` arrays. If `--github-annotations` is combined with `--check --json`, annotations are written to stderr so stdout remains valid JSON.
 
 Emit GitHub Actions error annotations for missing or stale translations during checks:
 
@@ -198,7 +219,7 @@ The reusable package lives in `pkg/lingo` and covers:
 - optional glossary propagation for terminology guidance
 - source digest metadata generation and synchronization checks
 - output planning for single-target and multi-target runs, including safe configurable naming patterns
-- dry-run and check workflows for scriptable automation, including GitHub Actions annotations
+- dry-run and check workflows for scriptable automation, including JSON output and GitHub Actions annotations
 - GitHub Actions and GitLab CI template generation for scheduled stale-translation checks with optional branch filters
 
 The CLI in `cmd/readme-lingo` is intentionally thin and delegates behavior to the package.
@@ -213,13 +234,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-Unit tests use fake HTTP transports and temporary files. They do not call real APIs, do not require API keys, and cover output naming patterns and `--check --github-annotations` without reading glossary files.
+Unit tests use fake HTTP transports and temporary files. They do not call real APIs, do not require API keys, and cover output naming patterns, JSON dry-run/check output, and `--check --github-annotations` without reading glossary files.
 
 ## Roadmap
 
 - Tagged releases for reproducible `go install ...@vX.Y.Z` installs
 - First-class release artifacts and checksums for downloaded binaries
-- Machine-readable JSON plan output for CI integrations
+- Configurable fail policies for CI checks, such as missing-only or stale-only enforcement
 
 ## AI-Assisted Maintenance
 

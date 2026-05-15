@@ -21,6 +21,7 @@ readme-lingo 是一个面向维护者的 Go 命令行工具，用于让多语言
 - 可在翻译提示中加入可选术语表指导，使项目术语保持一致。
 - 写入包含源摘要、源路径、目标语言、模型和生成时间的隐藏元数据。
 - 无需调用 API 即可检查生成的译文是否缺失或过期，并可选择输出 GitHub Actions error annotations。
+- 为 dry-run 计划和 check 摘要输出机器可读 JSON，方便 CI 作业解析预期、缺失和过期输出。
 - 生成 GitHub Actions 或 GitLab CI 模板，用于在定时任务以及 pull request 或 merge request 中运行过期译文检查。
 - 插入或自动管理用于多语言 README 导航的顶部语言切换器。
 
@@ -138,11 +139,31 @@ go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run
 ```
 
+为自动化输出同一计划的 JSON：
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run --json
+```
+
+示例输出：
+
+```json
+{"plans":[{"source":"README.md","target":"zh","output":"README-zh.md"},{"source":"README.md","target":"ja","output":"README-ja.md"}]}
+```
+
 检查期望的译文是否存在，并且是否匹配当前源文件摘要：
 
 ```sh
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
+
+以 JSON 输出检查结果。如果任何输出缺失或过期，命令仍会以非零状态退出：
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --json
+```
+
+JSON 检查输出包含 `plans`、`missing` 和 `stale` 数组。如果把 `--github-annotations` 与 `--check --json` 一起使用，annotations 会写到 stderr，因此 stdout 仍保持为有效 JSON。
 
 在检查时为缺失或过期译文输出 GitHub Actions error annotations：
 
@@ -198,7 +219,7 @@ go run ./cmd/readme-lingo translate \
 - 用于术语指导的可选术语表传递
 - 源文件摘要元数据生成和同步检查
 - 单目标和多目标运行的输出规划，包括安全的可配置命名模式
-- 用于脚本化自动化的 dry-run 与 check 工作流，包括 GitHub Actions annotations
+- 用于脚本化自动化的 dry-run 与 check 工作流，包括 JSON 输出和 GitHub Actions annotations
 - 用于定时过期译文检查的 GitHub Actions 和 GitLab CI 模板生成，并支持可选分支过滤
 
 `cmd/readme-lingo` 中的 CLI 有意保持精简，把行为委托给包实现。
@@ -213,13 +234,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key，并覆盖输出命名模式以及不会读取术语表文件的 `--check --github-annotations`。
+单元测试使用假的 HTTP transport 和临时文件。测试不会调用真实 API，也不需要 API key，并覆盖输出命名模式、JSON dry-run/check 输出，以及不会读取术语表文件的 `--check --github-annotations`。
 
 ## 路线图
 
 - 用于可复现 `go install ...@vX.Y.Z` 安装的带标签 release
 - 用于下载二进制文件的一等 release artifacts 和 checksums
-- 用于 CI 集成的机器可读 JSON 计划输出
+- 面向 CI 检查的可配置失败策略，例如仅强制缺失输出或仅强制过期输出
 
 ## AI 辅助维护
 
@@ -229,4 +250,4 @@ test -z "$(gofmt -l .)"
 
 MIT。见 [LICENSE](LICENSE)。
 
-<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:4b58ff671674d6d2729c6947842eb30369579317221d89438970ffc6a4df7086","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"zh","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:337ff59409bd446bfcb74d12c2f55003a458d66304b9c011a0a5563ac48b564b","generated":"2026-05-05T00:00:00Z"} -->
