@@ -21,6 +21,7 @@ readme-lingo は、多言語 README を同期して保つための Go 製コマ�
 - 翻訳プロンプトに任意の用語集ガイダンスを含め、プロジェクト用語の一貫性を保てます。
 - ソースダイジェスト、ソースパス、対象言語、モデル、生成時刻を含む非表示メタデータを追加します。
 - API を呼び出さずに、生成済み翻訳が欠落または古くなっていないか確認し、必要に応じて GitHub Actions error annotations を出力します。
+- dry-run の計画と check の要約を機械可読 JSON で出力し、CI job が期待値、欠落、古い出力を解析できるようにします。
 - スケジュール実行と pull request または merge request で古い翻訳をチェックする GitHub Actions または GitLab CI テンプレートを生成します。
 - 多言語 README ナビゲーション用の上部言語スイッチャーを挿入または自動管理します。
 
@@ -138,11 +139,31 @@ API を呼び出さずに予定される出力だけを表示:
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run
 ```
 
+同じ計画を自動化向け JSON として出力:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --dry-run --json
+```
+
+出力例:
+
+```json
+{"plans":[{"source":"README.md","target":"zh","output":"README-zh.md"},{"source":"README.md","target":"ja","output":"README-ja.md"}]}
+```
+
 期待される翻訳ファイルが存在し、現在のソース digest と一致するか確認:
 
 ```sh
 go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check
 ```
+
+チェック結果を JSON として出力します。いずれかの出力が欠落または古い場合、コマンドは引き続き非ゼロで終了します:
+
+```sh
+go run ./cmd/readme-lingo translate --source README.md --targets zh,ja --output-dir . --check --json
+```
+
+JSON の check 出力には `plans`、`missing`、`stale` 配列が含まれます。`--github-annotations` を `--check --json` と組み合わせた場合、annotations は stderr に書かれるため stdout は有効な JSON のままです。
 
 チェック時に欠落または古い翻訳の GitHub Actions error annotations を出力:
 
@@ -198,7 +219,7 @@ go run ./cmd/readme-lingo translate \
 - 用語ガイダンスのための任意の用語集伝播
 - ソース digest メタデータの生成と同期チェック
 - 単一ターゲットおよび複数ターゲット実行の出力計画。安全な設定可能命名パターンも含みます
-- スクリプト化された自動化に向けた dry-run と check ワークフロー。GitHub Actions annotations も含みます
+- スクリプト化された自動化に向けた dry-run と check ワークフロー。JSON 出力と GitHub Actions annotations も含みます
 - 任意のブランチフィルターに対応した、スケジュール済み古い翻訳チェック向けの GitHub Actions と GitLab CI テンプレート生成
 
 `cmd/readme-lingo` の CLI は意図的に薄くし、挙動をパッケージに委譲しています。
@@ -213,13 +234,13 @@ go vet ./...
 test -z "$(gofmt -l .)"
 ```
 
-ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要で、出力命名パターンと、用語集ファイルを読まない `--check --github-annotations` もカバーします。
+ユニットテストは fake HTTP transport と一時ファイルを使います。実際の API は呼び出さず、API key も不要で、出力命名パターン、JSON dry-run/check 出力、用語集ファイルを読まない `--check --github-annotations` もカバーします。
 
 ## ロードマップ
 
 - 再現可能な `go install ...@vX.Y.Z` インストール用のタグ付きリリース
 - ダウンロード用バイナリの first-class release artifacts と checksums
-- CI 連携向けの機械可読 JSON plan 出力
+- CI チェック向けの設定可能な failure policy。欠落のみ、または古い出力のみの強制など
 
 ## AI 支援メンテナンス
 
@@ -229,4 +250,4 @@ test -z "$(gofmt -l .)"
 
 MIT。詳しくは [LICENSE](LICENSE) を参照してください。
 
-<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:4b58ff671674d6d2729c6947842eb30369579317221d89438970ffc6a4df7086","generated":"2026-05-05T00:00:00Z"} -->
+<!-- readme-lingo: {"source":"README.md","target":"ja","model":"google/gemma-4-26b-a4b-it:free","digest":"sha256:337ff59409bd446bfcb74d12c2f55003a458d66304b9c011a0a5563ac48b564b","generated":"2026-05-05T00:00:00Z"} -->

@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -97,6 +99,7 @@ func runTranslate(args []string) error {
 	glossary := fs.String("glossary", "", "UTF-8 text or Markdown file with project terminology guidance")
 	dryRun := fs.Bool("dry-run", false, "validate inputs and print planned outputs without calling the API")
 	check := fs.Bool("check", false, "verify translated files exist and match the source digest")
+	jsonOutput := fs.Bool("json", false, "emit machine-readable JSON for --dry-run or --check")
 	githubAnnotations := fs.Bool("github-annotations", false, "emit GitHub Actions annotations for --check failures")
 	switcher := fs.String("switcher", "", "comma-separated target:path pairs for the top language switcher")
 	autoSwitcher := fs.Bool("auto-switcher", false, "automatically manage a top language switcher from the source and target outputs")
@@ -128,16 +131,34 @@ func runTranslate(args []string) error {
 			OutputDir:     *outputDir,
 			OutputPattern: selectedOutputPattern(*outputPattern, outputPatternSet),
 		})
+		if *jsonOutput {
+			if len(result.Missing) > 0 || len(result.Stale) > 0 {
+				for _, plan := range result.Missing {
+					if *githubAnnotations {
+						printGitHubAnnotation(os.Stderr, plan, "missing translation", "Missing translation output "+plan.OutputPath)
+					}
+				}
+				for _, plan := range result.Stale {
+					if *githubAnnotations {
+						printGitHubAnnotation(os.Stderr, plan, "stale translation", "Stale translation output "+plan.OutputPath)
+					}
+				}
+			}
+			if encodeErr := writeCheckJSON(os.Stdout, result); encodeErr != nil {
+				return encodeErr
+			}
+			return err
+		}
 		for _, plan := range result.Missing {
 			fmt.Fprintf(os.Stdout, "missing: %s\n", plan.OutputPath)
 			if *githubAnnotations {
-				printGitHubAnnotation(plan, "missing translation", "Missing translation output "+plan.OutputPath)
+				printGitHubAnnotation(os.Stdout, plan, "missing translation", "Missing translation output "+plan.OutputPath)
 			}
 		}
 		for _, plan := range result.Stale {
 			fmt.Fprintf(os.Stdout, "stale: %s\n", plan.OutputPath)
 			if *githubAnnotations {
-				printGitHubAnnotation(plan, "stale translation", "Stale translation output "+plan.OutputPath)
+				printGitHubAnnotation(os.Stdout, plan, "stale translation", "Stale translation output "+plan.OutputPath)
 			}
 		}
 		if err == nil {
@@ -155,7 +176,11 @@ func runTranslate(args []string) error {
 		Model:   *model,
 		APIKey:  apiKey,
 	})
-	_, err = lingo.RunTranslate(context.Background(), lingo.TranslateOptions{
+	log := io.Writer(os.Stdout)
+	if *dryRun && *jsonOutput {
+		log = io.Discard
+	}
+	result, err := lingo.RunTranslate(context.Background(), lingo.TranslateOptions{
 		SourcePath:    *source,
 		Targets:       targets,
 		OutputPath:    *output,
@@ -168,7 +193,12 @@ func runTranslate(args []string) error {
 		Switcher:      *switcher,
 		AutoSwitcher:  *autoSwitcher,
 		Model:         *model,
-	}, client, os.Stdout)
+	}, client, log)
+	if err == nil && *dryRun && *jsonOutput {
+		if encodeErr := writePlansJSON(os.Stdout, result.Plans); encodeErr != nil {
+			return encodeErr
+		}
+	}
 	return err
 }
 
@@ -189,9 +219,51 @@ func selectedOutputPattern(pattern string, wasProvided bool) string {
 	return pattern
 }
 
-func printGitHubAnnotation(plan lingo.OutputPlan, title string, message string) {
+type jsonPlan struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Output string `json:"output"`
+}
+
+type plansJSONOutput struct {
+	Plans []jsonPlan `json:"plans"`
+}
+
+type checkJSONOutput struct {
+	Plans   []jsonPlan `json:"plans"`
+	Missing []jsonPlan `json:"missing"`
+	Stale   []jsonPlan `json:"stale"`
+}
+
+func writePlansJSON(w io.Writer, plans []lingo.OutputPlan) error {
+	return json.NewEncoder(w).Encode(plansJSONOutput{
+		Plans: outputPlansToJSON(plans),
+	})
+}
+
+func writeCheckJSON(w io.Writer, result lingo.CheckResult) error {
+	return json.NewEncoder(w).Encode(checkJSONOutput{
+		Plans:   outputPlansToJSON(result.Plans),
+		Missing: outputPlansToJSON(result.Missing),
+		Stale:   outputPlansToJSON(result.Stale),
+	})
+}
+
+func outputPlansToJSON(plans []lingo.OutputPlan) []jsonPlan {
+	items := make([]jsonPlan, 0, len(plans))
+	for _, plan := range plans {
+		items = append(items, jsonPlan{
+			Source: plan.SourcePath,
+			Target: plan.Target,
+			Output: plan.OutputPath,
+		})
+	}
+	return items
+}
+
+func printGitHubAnnotation(w io.Writer, plan lingo.OutputPlan, title string, message string) {
 	fmt.Fprintf(
-		os.Stdout,
+		w,
 		"::error file=%s,title=%s::%s\n",
 		escapeGitHubAnnotationData(plan.SourcePath),
 		escapeGitHubAnnotationData(title),

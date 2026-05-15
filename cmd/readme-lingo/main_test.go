@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -10,6 +11,22 @@ import (
 
 	"github.com/codecat-ai/readme-lingo/pkg/lingo"
 )
+
+type testJSONPlan struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+	Output string `json:"output"`
+}
+
+type testDryRunJSONOutput struct {
+	Plans []testJSONPlan `json:"plans"`
+}
+
+type testCheckJSONOutput struct {
+	Plans   []testJSONPlan `json:"plans"`
+	Missing []testJSONPlan `json:"missing"`
+	Stale   []testJSONPlan `json:"stale"`
+}
 
 func TestTranslateDryRunAcceptsGlossaryWithoutReadingIt(t *testing.T) {
 	dir := t.TempDir()
@@ -31,6 +48,48 @@ func TestTranslateDryRunAcceptsGlossaryWithoutReadingIt(t *testing.T) {
 	}
 }
 
+func TestTranslateDryRunJSONPrintsOnlyPlanJSON(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	if err := os.WriteFile(source, []byte("# Demo\n"), 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+
+	output, err := captureStdout(t, func() error {
+		return run([]string{
+			"translate",
+			"--source", source,
+			"--targets", "zh,ja",
+			"--output-dir", dir,
+			"--dry-run",
+			"--json",
+		})
+	})
+	if err != nil {
+		t.Fatalf("dry-run json: %v", err)
+	}
+	if strings.Contains(output, "plan:") {
+		t.Fatalf("json stdout contains text plan prefix:\n%s", output)
+	}
+
+	var got testDryRunJSONOutput
+	if err := json.Unmarshal([]byte(output), &got); err != nil {
+		t.Fatalf("stdout is not valid json: %v\n%s", err, output)
+	}
+	want := []testJSONPlan{
+		{Source: source, Target: "zh", Output: filepath.Join(dir, "README-zh.md")},
+		{Source: source, Target: "ja", Output: filepath.Join(dir, "README-ja.md")},
+	}
+	if len(got.Plans) != len(want) {
+		t.Fatalf("plans length = %d, want %d: %+v", len(got.Plans), len(want), got.Plans)
+	}
+	for i := range want {
+		if got.Plans[i] != want[i] {
+			t.Fatalf("plan[%d] = %+v, want %+v", i, got.Plans[i], want[i])
+		}
+	}
+}
+
 func TestTranslateDryRunAcceptsChunkFlagsWithoutNetwork(t *testing.T) {
 	dir := t.TempDir()
 	source := filepath.Join(dir, "README.md")
@@ -49,6 +108,112 @@ func TestTranslateDryRunAcceptsChunkFlagsWithoutNetwork(t *testing.T) {
 	})
 	if err != nil {
 		t.Fatalf("dry-run should accept chunk flags: %v", err)
+	}
+}
+
+func TestTranslateCheckJSONReportsMissingAndStaleWithoutStdoutText(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	sourceMarkdown := []byte("# Demo\nChanged\n")
+	if err := os.WriteFile(source, sourceMarkdown, 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	stale := lingo.AddMetadata("# Old\n", lingo.Metadata{
+		SourcePath:  source,
+		Target:      "zh",
+		Model:       "test-model",
+		SourceHash:  lingo.SourceDigest([]byte("# Demo\n")),
+		GeneratedAt: time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC),
+	})
+	stalePath := filepath.Join(dir, "README-zh.md")
+	if err := os.WriteFile(stalePath, []byte(stale), 0o644); err != nil {
+		t.Fatalf("write stale translation: %v", err)
+	}
+	missingPath := filepath.Join(dir, "README-ja.md")
+
+	stdout, stderr, err := captureOutput(t, func() error {
+		return run([]string{
+			"translate",
+			"--source", source,
+			"--targets", "zh,ja",
+			"--output-dir", dir,
+			"--check",
+			"--json",
+			"--github-annotations",
+		})
+	})
+	if err == nil {
+		t.Fatal("expected stale/missing check error")
+	}
+	for _, forbidden := range []string{"missing:", "stale:", "::error"} {
+		if strings.Contains(stdout, forbidden) {
+			t.Fatalf("json stdout contains %q:\n%s", forbidden, stdout)
+		}
+	}
+	if !strings.Contains(stderr, "::error file="+source+",title=missing translation::Missing translation output "+missingPath) {
+		t.Fatalf("stderr missing GitHub annotation:\n%s", stderr)
+	}
+
+	var got testCheckJSONOutput
+	if err := json.Unmarshal([]byte(stdout), &got); err != nil {
+		t.Fatalf("stdout is not valid json: %v\n%s", err, stdout)
+	}
+	if len(got.Plans) != 2 {
+		t.Fatalf("plans = %+v, want two plans", got.Plans)
+	}
+	if len(got.Missing) != 1 || got.Missing[0] != (testJSONPlan{Source: source, Target: "ja", Output: missingPath}) {
+		t.Fatalf("missing = %+v, want ja missing", got.Missing)
+	}
+	if len(got.Stale) != 1 || got.Stale[0] != (testJSONPlan{Source: source, Target: "zh", Output: stalePath}) {
+		t.Fatalf("stale = %+v, want zh stale", got.Stale)
+	}
+}
+
+func TestTranslateCheckJSONReportsSynchronizedOutputs(t *testing.T) {
+	dir := t.TempDir()
+	source := filepath.Join(dir, "README.md")
+	sourceMarkdown := []byte("# Demo\n")
+	if err := os.WriteFile(source, sourceMarkdown, 0o644); err != nil {
+		t.Fatalf("write source: %v", err)
+	}
+	outputPath := filepath.Join(dir, "README-zh.md")
+	translated := lingo.AddMetadata("# Demo translated\n", lingo.Metadata{
+		SourcePath:  source,
+		Target:      "zh",
+		Model:       "test-model",
+		SourceHash:  lingo.SourceDigest(sourceMarkdown),
+		GeneratedAt: time.Date(2026, 5, 5, 12, 0, 0, 0, time.UTC),
+	})
+	if err := os.WriteFile(outputPath, []byte(translated), 0o644); err != nil {
+		t.Fatalf("write synchronized translation: %v", err)
+	}
+
+	output, err := captureStdout(t, func() error {
+		return run([]string{
+			"translate",
+			"--source", source,
+			"--target", "zh",
+			"--output", outputPath,
+			"--check",
+			"--json",
+		})
+	})
+	if err != nil {
+		t.Fatalf("check json synchronized: %v", err)
+	}
+	if strings.Contains(output, "ok:") {
+		t.Fatalf("json stdout contains text ok prefix:\n%s", output)
+	}
+
+	var got testCheckJSONOutput
+	if err := json.Unmarshal([]byte(output), &got); err != nil {
+		t.Fatalf("stdout is not valid json: %v\n%s", err, output)
+	}
+	if len(got.Plans) != 1 || got.Plans[0] != (testJSONPlan{Source: source, Target: "zh", Output: outputPath}) {
+		t.Fatalf("plans = %+v, want synchronized plan", got.Plans)
+	}
+	if len(got.Missing) != 0 || len(got.Stale) != 0 {
+		t.Fatalf("missing/stale = %+v/%+v, want empty", got.Missing, got.Stale)
 	}
 }
 
@@ -386,4 +551,47 @@ func captureStdout(t *testing.T, fn func() error) (string, error) {
 		t.Fatalf("close stdout reader: %v", err)
 	}
 	return string(data), runErr
+}
+
+func captureOutput(t *testing.T, fn func() error) (string, string, error) {
+	t.Helper()
+	originalStdout := os.Stdout
+	originalStderr := os.Stderr
+	stdoutR, stdoutW, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stdout pipe: %v", err)
+	}
+	stderrR, stderrW, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("create stderr pipe: %v", err)
+	}
+	os.Stdout = stdoutW
+	os.Stderr = stderrW
+	defer func() {
+		os.Stdout = originalStdout
+		os.Stderr = originalStderr
+	}()
+
+	runErr := fn()
+	if err := stdoutW.Close(); err != nil {
+		t.Fatalf("close stdout pipe: %v", err)
+	}
+	if err := stderrW.Close(); err != nil {
+		t.Fatalf("close stderr pipe: %v", err)
+	}
+	stdoutData, readErr := io.ReadAll(stdoutR)
+	if readErr != nil {
+		t.Fatalf("read stdout pipe: %v", readErr)
+	}
+	stderrData, readErr := io.ReadAll(stderrR)
+	if readErr != nil {
+		t.Fatalf("read stderr pipe: %v", readErr)
+	}
+	if err := stdoutR.Close(); err != nil {
+		t.Fatalf("close stdout reader: %v", err)
+	}
+	if err := stderrR.Close(); err != nil {
+		t.Fatalf("close stderr reader: %v", err)
+	}
+	return string(stdoutData), string(stderrData), runErr
 }
